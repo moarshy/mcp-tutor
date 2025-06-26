@@ -5,6 +5,8 @@ Implements the educational tutoring MCP server with tools that use prepared docu
 
 import asyncio
 import logging
+import pickle
+import hashlib
 from typing import Any, Dict, List, Optional
 from pathlib import Path
 
@@ -23,9 +25,14 @@ logger = logging.getLogger(__name__)
 class MCPTutorServer:
     """MCP Server for educational tutoring using prepared documents"""
     
-    def __init__(self):
+    def __init__(self, output_dir: str = ".cache", use_cache: bool = True):
         self.server = Server("mcp-educational-tutor")
         self.ingester = GitHubRepositoryIngester()
+        self.output_dir = Path(output_dir)
+        self.use_cache = use_cache
+        
+        # Create output directory if it doesn't exist
+        self.output_dir.mkdir(exist_ok=True)
         
         # Initialize modular components
         self.tools_handler = MCPTools(self.ingester)
@@ -82,25 +89,64 @@ class MCPTutorServer:
                 )]
 
     async def initialize_content(self):
-        """Initialize content by processing MCP documentation repository"""
+        """Initialize content by processing MCP documentation repository with caching support"""
         if self.content_initialized:
             return
             
         try:
             logger.info("Initializing MCP documentation content...")
             
-            # Process the MCP documentation repository
+            # Repository configuration
             repo_url = "https://github.com/modelcontextprotocol/docs"
             branch = "main"
             
-            logger.info(f"Attempting to clone {repo_url}")
+            # Generate cache filename based on repo URL and branch
+            repo_hash = hashlib.md5(f"{repo_url}#{branch}".encode()).hexdigest()
+            cache_file = self.output_dir / f"mcp_docs_{repo_hash}.pickle"
+            
+            # Check if we should use cache
+            if self.use_cache and cache_file.exists():
+                logger.info(f"Loading cached content from {cache_file}")
+                try:
+                    with open(cache_file, 'rb') as f:
+                        cached_data = pickle.load(f)
+                    
+                    # Restore the cached documents to the ingester
+                    self.ingester.processor.prepared_docs = cached_data['prepared_docs']
+                    
+                    doc_count = len(self.ingester.processor.prepared_docs)
+                    logger.info(f"Successfully loaded {doc_count} documents from cache")
+                    
+                    # Log summary by type
+                    if doc_count > 0:
+                        type_counts = {}
+                        for doc in self.ingester.processor.prepared_docs.values():
+                            doc_type = doc.doc_type.value
+                            type_counts[doc_type] = type_counts.get(doc_type, 0) + 1
+                        
+                        logger.info(f"Document types: {type_counts}")
+                    
+                    self.content_initialized = True
+                    return
+                    
+                except Exception as e:
+                    logger.warning(f"Failed to load cache file {cache_file}: {e}")
+                    logger.info("Proceeding with fresh repository processing...")
+            
+            # If not using cache or cache doesn't exist, remove any existing cache file
+            if not self.use_cache and cache_file.exists():
+                logger.info(f"Removing existing cache file: {cache_file}")
+                cache_file.unlink()
+            
+            # Process repository fresh
+            logger.info(f"Attempting to clone and process {repo_url}")
             
             # Use the ingester to process the repository
             await self.ingester.ingest_repository(repo_url, branch)
             
             # Get count of processed documents
             doc_count = len(self.ingester.processor.prepared_docs)
-            logger.info(f"Successfully initialized content: {doc_count} documents prepared")
+            logger.info(f"Successfully processed content: {doc_count} documents prepared")
             
             # Log summary by type
             if doc_count > 0:
@@ -110,6 +156,21 @@ class MCPTutorServer:
                     type_counts[doc_type] = type_counts.get(doc_type, 0) + 1
                 
                 logger.info(f"Document types: {type_counts}")
+                
+                # Save to cache for future use
+                cache_data = {
+                    'prepared_docs': self.ingester.processor.prepared_docs,
+                    'repo_url': repo_url,
+                    'branch': branch,
+                    'timestamp': asyncio.get_event_loop().time()
+                }
+                
+                try:
+                    with open(cache_file, 'wb') as f:
+                        pickle.dump(cache_data, f)
+                    logger.info(f"Cached content saved to {cache_file}")
+                except Exception as e:
+                    logger.warning(f"Failed to save cache: {e}")
             else:
                 logger.warning("No documents were processed from the repository")
                 
