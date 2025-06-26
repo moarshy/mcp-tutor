@@ -12,9 +12,9 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 import mcp.types as types
 
-from .content_processing import GitHubRepositoryIngester
-from .tools import MCPTools
-from .prompts import MCPPrompts
+from mcp_server.content_processing import GitHubRepositoryIngester
+from mcp_server.tools import MCPTools
+from mcp_server.prompts import MCPPrompts
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

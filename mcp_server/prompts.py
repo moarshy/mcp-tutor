@@ -7,8 +7,6 @@ import logging
 from typing import Any, Dict, List, Optional
 
 import mcp.types as types
-from .content_processing import GitHubRepositoryIngester
-from .tools import MCPTools
 
 logger = logging.getLogger(__name__)
 

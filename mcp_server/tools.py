@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 from pathlib import Path
 
 import mcp.types as types
-from .content_processing import GitHubRepositoryIngester, PreparedDocument, DocumentType
+from mcp_server.content_processing import GitHubRepositoryIngester, PreparedDocument, DocumentType
 
 logger = logging.getLogger(__name__)
 
