@@ -31,6 +31,9 @@ class MCPTutorServer:
         self.tools_handler = MCPTools(self.ingester)
         self.prompts_handler = MCPPrompts(self.tools_handler)
         
+        # Flag to track if content is initialized
+        self.content_initialized = False
+        
         self.setup_handlers()
     
     def setup_handlers(self):
@@ -80,12 +83,17 @@ class MCPTutorServer:
 
     async def initialize_content(self):
         """Initialize content by processing MCP documentation repository"""
+        if self.content_initialized:
+            return
+            
         try:
             logger.info("Initializing MCP documentation content...")
             
             # Process the MCP documentation repository
             repo_url = "https://github.com/modelcontextprotocol/docs"
             branch = "main"
+            
+            logger.info(f"Attempting to clone {repo_url}")
             
             # Use the ingester to process the repository
             await self.ingester.ingest_repository(repo_url, branch)
@@ -95,20 +103,27 @@ class MCPTutorServer:
             logger.info(f"Successfully initialized content: {doc_count} documents prepared")
             
             # Log summary by type
-            type_counts = {}
-            for doc in self.ingester.processor.prepared_docs.values():
-                doc_type = doc.doc_type.value
-                type_counts[doc_type] = type_counts.get(doc_type, 0) + 1
-            
-            logger.info(f"Document types: {type_counts}")
+            if doc_count > 0:
+                type_counts = {}
+                for doc in self.ingester.processor.prepared_docs.values():
+                    doc_type = doc.doc_type.value
+                    type_counts[doc_type] = type_counts.get(doc_type, 0) + 1
+                
+                logger.info(f"Document types: {type_counts}")
+            else:
+                logger.warning("No documents were processed from the repository")
+                
+            self.content_initialized = True
             
         except Exception as e:
             logger.error(f"Failed to initialize content: {e}")
-            raise
+            logger.warning("Continuing with empty content - MCP tools will provide fallback responses")
+            # Don't raise, just log the error and continue with empty content
+            self.content_initialized = True
 
     async def run(self):
         """Run the MCP server with stdio transport"""
-        # Initialize content first
+        # Initialize content first, only once
         await self.initialize_content()
         
         logger.info("Starting MCP Educational Tutor Server...")
