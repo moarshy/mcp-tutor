@@ -1,146 +1,110 @@
-# MCP Educational Tutor
+# Educational Tutor
 
-An experimental Model Context Protocol (MCP) server that transforms documentation repositories into interactive educational content for AI tutoring systems.
-
-> **⚠️ Development Status**: This project is actively being developed. Currently uses [MCP documentation](https://github.com/modelcontextprotocol/docs) as course material. Future versions will/should support diverse content sources including GitHub repositories, websites, and YouTube videos.
+An experimental system that transforms documentation repositories into interactive educational content using AI and the Model Context Protocol (MCP).
 
 ## 🌟 Overview
 
-Inspired by Mastra's ["course as a MCP"](https://github.com/mastra-ai/mastra/tree/main/packages/mcp-docs-server), this project creates a specialized MCP server designed for educational applications. The server processes documentation repositories and exposes them through MCP tools and prompts for AI tutoring agents.
+This project consists of two main components:
 
-### What has been done?
-
-1. **MCP server**
-   - **Content Processing**
-     - clones the repo
-     - document level processing
-   - **MCP tools**
-     - exposes the following tools
-       - `search_mcp_concepts`: Search through prepared documents
-       - `get_document_by_key`: Retrieve specific documents by key
-       - `list_available_documents`: Browse all available content
-       - `get_code_example`: Find code examples for concepts (not properly thought through)
-     - uses a simple search logic (text matching with document title, description, content)
-   - **MCP Prompts**
-     - exposes the following prompts but note the current tutor_agent doesnt use them
-     - they have been explored but could become pivotal when Claude Desktop becomes the tutor agent
-     - available prompts
-       - `search_mcp_concepts`: Search through prepared documents
-       - `get_document_by_key`: Retrieve specific documents by key
-       - `list_available_documents`: Browse all available content
-       - `get_code_example`: Find code examples for concepts
-
-2. **Tutor Agent**
-   - the current tutor agent is implemented using DSPY's ReAct module
-   - simple loop that takes student query and student_profile (knowledge_level, interests, learning_goals)
-   - gererates teaching material (??)
-   - known issues with current implementation
-     - retrieval can be wild
-
-## ✅ Current Implementation
-
-### MCP Server Components
-
-#### 📚 Content Processing
-- **Repository Ingestion**: Automatically clones and processes Git repositories
-- **Document-Level Processing**: Creates complete, self-contained documents
-- **Smart Filtering**: Focuses on educational content (documentation, examples, changelogs)
-
-#### 🔧 MCP Tools (4 Available)
-- **`search_mcp_concepts`**: Search through prepared documents with text matching
-- **`get_document_by_key`**: Retrieve specific documents by unique identifier  
-- **`list_available_documents`**: Browse all available content by type
-- **`get_code_example`**: Find code examples for specific concepts
-
-#### 📝 MCP Prompts (6 Available)
-Educational prompts designed for structured learning:
-- **`explain_mcp_concept`**: Conceptual explanations with analogies
-- **`mcp_socratic_dialogue`**: Guided discovery through questioning
-- **`mcp_code_review`**: Educational code feedback
-- **`mcp_troubleshooting_guide`**: Systematic debugging assistance
-- **`mcp_project_architect`**: Design guidance from requirements
-- **`mcp_learning_path`**: Personalized learning plans
+1. **📚 Course Content Agent** - Generates structured learning courses from documentation repositories
+2. **🔧 MCP Educational Server** - Provides standardized access to course content via MCP protocol
 
 ## 🏗️ Architecture
 
-### Content Processing Pipeline
 ```
-GitHub Repository → Clone → Process → Prepare Documents → MCP Tools/Prompts
-```
-
-1. **GitHubRepositoryIngester**: Handles repository cloning and file discovery
-2. **DocumentProcessor**: Creates three document types:
-   - **Documentation**: `.md`/`.mdx` files as complete educational units
-   - **Code Examples**: Aggregated source files from example directories
-   - **Changelogs**: Version history and updates
-
-## 🚀 Quick Start
-
-### Installation
-```bash
-git clone <repository-url>
-cd tutor
-pip install -e .
+Documentation Repository → Course Content Agent → Structured Courses → MCP Server → AI Tutors
 ```
 
-### Run MCP Server
-```bash
-python -m mcp_server.main
-```
-
-### Run Tutor Agent
-```bash
-python tutor_agent.main.py
-```
+The system processes documentation, creates educational content, and exposes it through standardized tools for AI tutoring applications.
 
 ## 📂 Project Structure
 
 ```
 tutor/
-├── mcp_server/              # Core MCP server implementation
-│   ├── __init__.py
-│   ├── main.py             # Server orchestration & startup
-│   ├── tools.py            # 4 MCP tools implementation
-│   ├── prompts.py          # 6 educational prompts
-│   └── content_processing.py # Repository ingestion pipeline
-├── mcp_client/             # Client implementation (future)
-├── tutor_agent/           # DSPy agent integration
-│   ├── __init__.py
-│   ├── main.py            # DSPy ReAct tutor agent
-│   └── deprecated/        # Previous implementations
-├── tests/                 # Test implementations
-│   ├── test_tutor_agent.py
-│   └── test_server.py
-├── docs/                  # Architecture documentation
-├── cache/                 # Cached processed documents
-├── pyproject.toml         # Project configuration
-└── README.md             # Project documentation
+├── course_content_agent/    # AI-powered course generation from docs
+│   ├── main.py             # CourseBuilder orchestration
+│   ├── modules.py          # Core processing logic
+│   ├── models.py           # Pydantic data models
+│   ├── signatures.py       # DSPy LLM signatures
+│   └── about.md           # 📖 Detailed documentation
+├── mcp_server/             # MCP protocol server for course access
+│   ├── main.py            # MCP server startup
+│   ├── tools.py           # Course interaction tools
+│   ├── course_management.py # Content processing
+│   └── about.md           # 📖 Detailed documentation
+├── course_output/          # Generated course content
+├── nbs/                   # Jupyter notebooks for development
+└── pyproject.toml         # Project configuration
 ```
 
-### Key Components
+## 🚀 Quick Start
 
-**`mcp_server/`** - The core MCP server that processes content and exposes tools/prompts
-- `main.py`: Server startup, content initialization, MCP handler registration
-- `tools.py`: 4 MCP tools for document search and retrieval
-- `prompts.py`: 6 educational prompts for structured learning
-- `content_processing.py`: GitHub repo cloning and document preparation
+### 1. Generate Courses from Documentation
 
-**`tutor_agent/`** - DSPy-based educational agent that consumes MCP tools
-- `main.py`: ReAct agent implementation with MCP integration
-- Uses DSPy ReAct pattern to intelligently call MCP tools based on student queries
+```bash
+# Install dependencies
+pip install -e .
 
-**`tests/`** - Test suite for validation
-- Agent functionality and MCP integration tests
-- Server tool and prompt testing
+# Generate courses from a repository
+python course_content_agent/test.py
+```
 
-## Musings
+**Customize for Your Repository**: Edit `course_content_agent/test.py` to change:
+- Repository URL (currently uses MCP docs)
+- Include/exclude specific folders
+- Output directory and caching settings
 
-### 1. MCP Server Design Questions
-- Tool/Prompt Strategy: What tools and prompts should the server actually expose?
-- Knowledge Discovery: Since retrieval seems to be the most important thing this provides, how/what should we implement for better discovery?
-- Domain Flexibility: We're starting with technical docs - how much does the server need to change for teaching, say, high school maths?
-- Resource Types: Should we also expose resources - for example, images that the agent can use for teaching? Can this be used in teachings?
+### 2. Start MCP Server
 
-### 2. Tutor Agent Architecture
-- Multi-Domain Agents: Will we have a single agent for different types of "courses" (technical docs vs maths vs other subjects)?
-- Agent Pattern Choice: ReAct vs other agent patterns - what works best for educational use cases?
+```bash
+# Serve generated courses via MCP protocol
+python -m mcp_server.main
+
+# Or customize course directory
+COURSE_DIR=your_course_output python -m mcp_server.main
+```
+
+### 3. Test MCP Integration
+
+```bash
+# Test server capabilities
+python mcp_server/stdio_client.py
+```
+
+## 📖 Detailed Documentation
+
+For comprehensive information about each component:
+
+- **Course Content Agent**: See [`course_content_agent/about.md`](course_content_agent/about.md)
+  - AI-powered course generation
+  - DSPy signatures and multiprocessing
+  - Document analysis and learning path creation
+  
+- **MCP Educational Server**: See [`mcp_server/about.md`](mcp_server/about.md)
+  - MCP protocol implementation
+  - Course interaction tools
+  - Integration with AI assistants
+
+## 🔧 Development Status
+
+**Current Status**: ✅ Functional MVP
+- Course generation from documentation repositories
+- MCP server for standardized content access
+- Multi-complexity course creation (beginner/intermediate/advanced)
+
+**Future Enhancements**:
+- Support for diverse content sources (websites, videos)
+- Advanced search and recommendation systems
+- Integration with popular AI platforms
+
+## 🛠️ Technology Stack
+
+- **AI Framework**: DSPy for LLM orchestration
+- **Content Processing**: Multiprocessing for performance
+- **Protocol**: Model Context Protocol (MCP) for standardization
+- **Models**: Gemini 2.5 Flash for content generation
+- **Data**: Pydantic models for type safety
+
+## 📄 License
+
+This project is experimental and intended for educational and research purposes.

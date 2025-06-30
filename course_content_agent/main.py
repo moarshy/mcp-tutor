@@ -284,12 +284,13 @@ class CourseBuilder:
             bool: True if course generation was successful
         """
         try:
-            # Convert to Path object
-             
-            # Check if repo exists
-            if not repo_path.exists():
-                logger.error(f"Repository path does not exist: {repo_path}")
-                return False
+            # Convert to Path object if it's a local path, otherwise keep as URL string
+            if not repo_path.startswith(('http://', 'https://')):
+                repo_path_obj = Path(repo_path).resolve()
+                # Check if repo exists locally
+                if not repo_path_obj.exists():
+                    logger.error(f"Repository path does not exist: {repo_path}")
+                    return False
             
             # Create output directory
             output_path = Path(output_dir).resolve()
@@ -306,10 +307,10 @@ class CourseBuilder:
                 logger.info(f"Including folders: {include_folders}")
 
             # Clone the repo
-            repo_path = self.repo_manager.clone_or_update_repo(repo_path)
+            cloned_repo_path = self.repo_manager.clone_or_update_repo(repo_path)
             
             # Find documentation files using existing repo manager
-            doc_files = self.repo_manager.find_documentation_files(repo_path.as_posix(), include_folders=include_folders)
+            doc_files = self.repo_manager.find_documentation_files(cloned_repo_path, include_folders=include_folders)
             
             if not doc_files:
                 logger.error("No documentation files found in repository")
@@ -321,7 +322,7 @@ class CourseBuilder:
             overview_content = self._find_overview_document(doc_files, overview_doc)
             
             # Check cache for processed document tree
-            repo_name = repo_path.name
+            repo_name = cloned_repo_path.name
             cache_file = cache_path / f"{repo_name}_document_tree.pkl"
             
             tree = None
@@ -339,7 +340,18 @@ class CourseBuilder:
                 logger.info("Processing documents...")
                 
                 # Create document tree
-                tree = DocumentTree(root_path=str(repo_path))
+                tree = DocumentTree(
+                    repo_url=repo_path,
+                    repo_name=repo_name,
+                    root_path=str(cloned_repo_path),
+                    nodes={},
+                    tree_structure={},
+                    cross_references={},
+                    last_updated=datetime.now(),
+                    document_categories={},
+                    complexity_distribution={},
+                    learning_paths=[]
+                )
                 
                 # Process raw documents
                 raw_results = self._process_raw_documents(doc_files, tree)
@@ -360,19 +372,35 @@ class CourseBuilder:
                     logger.warning(f"Failed to cache document tree: {e}")
             
             # Generate learning paths using the new LearningPathGenerator
-            logger.info("Generating learning paths...")
-            
-            # Set repo_name if not available
-            if not hasattr(tree, 'repo_name') or not tree.repo_name:
-                tree.repo_name = repo_name
-            
-            grouped_paths = self.learning_path_generator.generate_grouped_paths(tree, overview_content)
-            
-            if not grouped_paths:
-                logger.error("No learning paths were generated")
-                return False
+            # Check if learning paths already exist in cached tree
+            if hasattr(tree, 'learning_paths') and tree.learning_paths:
+                logger.info(f"Using {len(tree.learning_paths)} cached learning paths")
+                grouped_paths = tree.learning_paths
+            else:
+                logger.info("Generating learning paths...")
                 
-            logger.info(f"Generated {len(grouped_paths)} learning paths")
+                # Set repo_name if not available
+                if not hasattr(tree, 'repo_name') or not tree.repo_name:
+                    tree.repo_name = repo_name
+                
+                grouped_paths = self.learning_path_generator.generate_grouped_paths(tree, overview_content)
+                
+                if not grouped_paths:
+                    logger.error("No learning paths were generated")
+                    return False
+                    
+                logger.info(f"Generated {len(grouped_paths)} learning paths")
+                
+                # Add learning paths to tree and re-cache
+                tree.learning_paths = grouped_paths
+                
+                # Update cache with learning paths
+                try:
+                    with open(cache_file, 'wb') as f:
+                        pickle.dump(tree, f)
+                    logger.info(f"Updated cache with learning paths: {cache_file}")
+                except Exception as e:
+                    logger.warning(f"Failed to update cache with learning paths: {e}")
             
             # Generate course content for each learning path
             logger.info("Generating course content...")
@@ -411,33 +439,3 @@ class CourseBuilder:
             logger.error(f"Course generation failed: {e}")
             return False
 
-def main():
-    """Enhanced example usage with multiprocessing"""
-    
-    # Initialize builder with multiprocessing
-    builder = CourseBuilder(max_workers=10) 
-    
-    # Test with a documentation repository
-    repo_path = "https://github.com/modelcontextprotocol/docs"
-    
-    try:
-        logger.info("Building course with multiprocessing...")
-        
-        # Example: Only include specific folders
-        # include_folders = ["docs", "guides", "reference"]  # Only process these folders
-        # success = builder.build_course(repo_path, include_folders=include_folders)
-        
-        # Example: With overview document for better context
-        # success = builder.build_course(repo_path, overview_doc="architecture.mdx")
-        
-        # Build with all folders (default behavior)
-        success = builder.build_course(repo_path)
-        
-        return success
-    
-    except Exception as e:
-        logger.error(f"Error: {e}", exc_info=True)
-        return False
-
-if __name__ == "__main__":
-    main()

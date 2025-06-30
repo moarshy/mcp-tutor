@@ -40,14 +40,9 @@ dev = [
     "pre-commit>=3.0.0",
 ]
 
-[project.scripts]
-mcp-tutor-server = "mcp_server.main:main"
-mcp-tutor-client = "mcp_client.main:main"
-mcp-tutor-agent = "tutor_agent.main:main"
-
 # Configure each module as a separate package
 [tool.hatch.build.targets.wheel]
-packages = ["mcp_server", "mcp_client", "tutor_agent"]
+packages = ["mcp_server", "course_content_agent"]
 
 [tool.hatch.envs.default]
 dependencies = [

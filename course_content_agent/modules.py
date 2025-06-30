@@ -758,7 +758,6 @@ class CourseGenerator(dspy.Module):
                 if node.content.strip():
                     doc_content = f"""
 ## {node.metadata.title}
-
 {node.content}
 """
                     source_content.append(doc_content)
@@ -792,7 +791,7 @@ class CourseGenerator(dspy.Module):
             module_description=module.description,
             learning_objectives=", ".join(module.learning_objectives),
             overview_context=overview_context,
-            source_documents=source_documents[:15000]  # Limit source documents to avoid context window issues
+            source_documents=source_documents
         )
         return result.main_content
     
@@ -849,65 +848,75 @@ class CourseGenerator(dspy.Module):
 class CourseExporter:
     """Export generated course to files"""
     
-    def export_to_markdown(self, course: GeneratedCourse, output_dir: str) -> None:
+    def export_to_markdown(self, course: GeneratedCourse, output_dir: str) -> bool:
         """Export complete course as markdown files with flat module structure"""
         
-        output_path = Path(output_dir)
-        course_dir = output_path / course.course_id
-        course_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Export course welcome message
-        with open(course_dir / "00_welcome.md", 'w', encoding='utf-8') as f:
-            f.write(f"# {course.title}\n\n")
-            f.write(f"{course.description}\n\n")
-            f.write("---\n\n")
-            f.write(course.welcome_message)
-        
-        # Export each module with flat structure
-        for i, module_content in enumerate(course.modules):
-            # Use module_id directly instead of numbered folders
-            module_dir = course_dir / module_content.module_id
-            module_dir.mkdir(exist_ok=True)
+        try:
+            output_path = Path(output_dir)
             
-            # 01_intro.md
-            with open(module_dir / "01_intro.md", 'w', encoding='utf-8') as f:
-                f.write(module_content.introduction)
+            # Extract complexity level from course_id for simplified folder naming
+            # course_id format: "repo_name_hash_complexity"
+            complexity_level = course.course_id.split('_')[-1]
+            course_dir = output_path / complexity_level
+            course_dir.mkdir(parents=True, exist_ok=True)
             
-            # 02_main.md
-            with open(module_dir / "02_main.md", 'w', encoding='utf-8') as f:
-                f.write(module_content.main_content)
+            # Export course welcome message
+            with open(course_dir / "00_welcome.md", 'w', encoding='utf-8') as f:
+                f.write(f"# {course.title}\n\n")
+                f.write(f"{course.description}\n\n")
+                f.write("---\n\n")
+                f.write(course.welcome_message)
             
-            # 03_conclusion.md
-            with open(module_dir / "03_conclusion.md", 'w', encoding='utf-8') as f:
-                f.write(module_content.conclusion)
+            # Export each module with flat structure
+            for i, module_content in enumerate(course.modules):
+                # Use module_id directly instead of numbered folders
+                module_dir = course_dir / module_content.module_id
+                module_dir.mkdir(exist_ok=True)
+                
+                # 01_intro.md
+                with open(module_dir / "01_intro.md", 'w', encoding='utf-8') as f:
+                    f.write(module_content.introduction)
+                
+                # 02_main.md
+                with open(module_dir / "02_main.md", 'w', encoding='utf-8') as f:
+                    f.write(module_content.main_content)
+                
+                # 03_conclusion.md
+                with open(module_dir / "03_conclusion.md", 'w', encoding='utf-8') as f:
+                    f.write(module_content.conclusion)
+                
+                # 04_assessments.md
+                with open(module_dir / "04_assessments.md", 'w', encoding='utf-8') as f:
+                    f.write(module_content.assessment)
+                
+                # 05_summary.md
+                with open(module_dir / "05_summary.md", 'w', encoding='utf-8') as f:
+                    f.write(module_content.summary)
             
-            # 04_assessments.md
-            with open(module_dir / "04_assessments.md", 'w', encoding='utf-8') as f:
-                f.write(module_content.assessment)
+            # Export course conclusion
+            with open(course_dir / "99_conclusion.md", 'w', encoding='utf-8') as f:
+                f.write(course.course_conclusion)
             
-            # 05_summary.md
-            with open(module_dir / "05_summary.md", 'w', encoding='utf-8') as f:
-                f.write(module_content.summary)
-        
-        # Export course conclusion
-        with open(course_dir / "99_conclusion.md", 'w', encoding='utf-8') as f:
-            f.write(course.course_conclusion)
-        
-        # Export course info
-        course_info = {
-            "title": course.title,
-            "description": course.description,
-            "modules": [
-                {
-                    "module_id": module.module_id,
-                    "files": ["01_intro.md", "02_main.md", "03_conclusion.md", "04_assessments.md", "05_summary.md"]
-                }
-                for module in course.modules
-            ]
-        }
-        
-        with open(course_dir / "course_info.json", 'w', encoding='utf-8') as f:
-            json.dump(course_info, f, indent=2)
-        
-        logger.info(f"Course exported to {course_dir}")
-        print(f"Course exported to: {course_dir}") 
+            # Export course info
+            course_info = {
+                "title": course.title,
+                "description": course.description,
+                "modules": [
+                    {
+                        "module_id": module.module_id,
+                        "files": ["01_intro.md", "02_main.md", "03_conclusion.md", "04_assessments.md", "05_summary.md"]
+                    }
+                    for module in course.modules
+                ]
+            }
+            
+            with open(course_dir / "course_info.json", 'w', encoding='utf-8') as f:
+                json.dump(course_info, f, indent=2)
+            
+            logger.info(f"Course exported to {course_dir}")
+            print(f"Course exported to: {course_dir}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to export course: {e}")
+            return False 

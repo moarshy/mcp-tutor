@@ -46,14 +46,14 @@ class ModuleIntroGenerator(dspy.Signature):
     introduction: str = dspy.OutputField(desc="Module introduction in markdown format")
 
 class ModuleMainContentGenerator(dspy.Signature):
-    """Generate comprehensive module main content from source documents. You must output well-formatted markdown content, NOT JSON or configuration formats."""
+    """Generate comprehensive module main content from source documents. You MUST use the provided source documents as your primary information source."""
     module_title: str = dspy.InputField(desc="Title of the module")
     module_description: str = dspy.InputField(desc="Detailed description of the module")
     learning_objectives: str = dspy.InputField(desc="Comma-separated list of learning objectives")
     overview_context: str = dspy.InputField(desc="Overview of the entire documentation project")
-    source_documents: str = dspy.InputField(desc="Markdown documentation content for this module")
+    source_documents: str = dspy.InputField(desc="Markdown documentation content for this module - USE THIS CONTENT as your primary source")
     
-    main_content: str = dspy.OutputField(desc="Comprehensive module content in markdown format ONLY. Do NOT return JSON, YAML, or configuration file formats. Start with markdown headers and provide educational content.")
+    main_content: str = dspy.OutputField(desc="Comprehensive educational content in markdown format. MUST extract and synthesize information from the provided source_documents. Do NOT say information is unavailable if it exists in source_documents. Start with markdown headers and provide detailed explanations based on the source material. Do not do conclusions or summaries, just provide the content.")
 
 class ModuleConclusionGenerator(dspy.Signature):
     """Generate module conclusion"""
@@ -72,15 +72,6 @@ class ModuleSummaryGenerator(dspy.Signature):
     overview_context: str = dspy.InputField(desc="Overview of the entire documentation project")
     
     summary: str = dspy.OutputField(desc="Module summary in markdown format")
-
-class AssessmentMetadataGenerator(dspy.Signature):
-    """Generate assessment metadata (title and concepts to assess)"""
-    module_theme: str = dspy.InputField(desc="Theme of the module")
-    learning_objectives: str = dspy.InputField(desc="Comma-separated list of learning objectives for the module")
-    key_concepts: str = dspy.InputField(desc="Comma-separated list of key concepts covered in the module")
-    
-    assessment_title: str = dspy.OutputField(desc="Title for the assessment")
-    concepts_to_assess: str = dspy.OutputField(desc="Comma-separated list of key concepts to assess")
 
 class AssessmentContentGenerator(dspy.Signature):
     """Generate actual assessment content"""
