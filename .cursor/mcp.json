@@ -5,8 +5,12 @@
         "args": ["-y", "@mastra/mcp-docs-server"]
       },
       "educational-tutor": {
-        "command": "python",
-        "args": ["mcp_server/main.py"]
+        "command": "/Users/arshath/miniforge3/bin/python",
+        "args": ["-m", "mcp_server.main"],
+        "cwd": "/Users/arshath/play/naptha/tutor",
+        "env": {
+          "COURSE_DIR": "/Users/arshath/play/naptha/tutor/nbs/course_output"
+        }
       }
     }
   }
