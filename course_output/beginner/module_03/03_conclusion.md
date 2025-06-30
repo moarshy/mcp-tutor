@@ -1,0 +1,5 @@
+This module has provided a foundational understanding of how communication is structured within the Model Context Protocol (MCP). We've established that **transports** are the critical layer enabling the actual exchange of data between MCP clients and servers.
+
+A core takeaway is MCP's reliance on **JSON-RPC 2.0** for its message formats. You should now be able to identify the four primary message types: **requests** (expecting a response), **results** (successful responses), **errors** (failed responses), and **notifications** (one-way messages).
+
+Furthermore, we explored the two built-in transport implementations: **stdio** and **Server-Sent Events (SSE)**. The **stdio transport** is ideal for efficient, local inter-process communication, while the **SSE transport** (leveraging HTTP POST for client-to-server and SSE for server-to-client) is well-suited for remote communication and scenarios requiring HTTP compatibility. Understanding these message formats and transport mechanisms is crucial for building robust and effective MCP integrations.

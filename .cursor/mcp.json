@@ -9,7 +9,7 @@
         "args": ["-m", "mcp_server.main"],
         "cwd": "/Users/arshath/play/naptha/tutor",
         "env": {
-          "COURSE_DIR": "/Users/arshath/play/naptha/tutor/nbs/course_output"
+          "COURSE_DIR": "/Users/arshath/play/naptha/tutor/course_output"
         }
       }
     }

@@ -85,6 +85,32 @@ For comprehensive information about each component:
   - Course interaction tools
   - Integration with AI assistants
 
+## 🔌 MCP Integration with Cursor
+
+To use the educational tutor MCP server with Cursor, create a `.cursor/mcp.json` file in your project root:
+
+```json
+{
+    "mcpServers": {
+        "educational-tutor": {
+            "command": "/path/to/your/python",
+            "args": ["-m", "mcp_server.main"],
+            "cwd": "/path/to/tutor/project",
+            "env": {
+                "COURSE_DIR": "/path/to/tutor/course_output"
+            }
+        }
+    }
+}
+```
+
+**Setup Steps**:
+1. Update the `command` path to your Python executable (`which python`)
+2. Update the `cwd` path to your tutor project directory
+3. Update the `COURSE_DIR` to your course output directory
+4. Restart Cursor or reload the window
+5. Use `@educational-tutor` in Cursor chat to access course tools
+
 ## 🔧 Development Status
 
 **Current Status**: ✅ Functional MVP

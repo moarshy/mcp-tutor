@@ -43,7 +43,7 @@ class CourseStructure(BaseModel):
 class CourseContentProcessor:
     """Process course content from local directory"""
     
-    def __init__(self, course_directory: str = "nbs/course_output"):
+    def __init__(self, course_directory: str = "../course_output"):
         self.course_directory = Path(course_directory)
         self.courses: Dict[str, CourseStructure] = {}
     
@@ -55,10 +55,10 @@ class CourseContentProcessor:
             logger.warning(f"Course directory does not exist: {self.course_directory}")
             return
         
-        # Process each course level directory (docs_beginner, docs_intermediate, etc.)
+        # Process each course level directory (beginner, intermediate, advanced, etc.)
         for level_dir in self.course_directory.iterdir():
-            if level_dir.is_dir() and level_dir.name.startswith('docs_'):
-                level = level_dir.name.replace('docs_', '')
+            if level_dir.is_dir() and level_dir.name in ['beginner', 'intermediate', 'advanced']:
+                level = level_dir.name
                 course = self._process_course_level(level_dir, level)
                 if course:
                     self.courses[level] = course
@@ -192,7 +192,7 @@ class CourseContentProcessor:
 # Example usage
 def main():
     """Example usage"""
-    processor = CourseContentProcessor("nbs/course_output")
+    processor = CourseContentProcessor("course_output")
     processor.scan_courses()
     
     print(f"Available courses: {processor.list_courses()}")
@@ -202,6 +202,10 @@ def main():
     if beginner:
         print(f"Beginner course: {beginner.title}")
         print(f"Modules: {len(beginner.modules)}")
+        for module in beginner.modules:
+            print(f"  - Module {module.module_id}: {module.title} ({len(module.steps)} steps)")
+    else:
+        print("No beginner course found")
 
 
 if __name__ == "__main__":

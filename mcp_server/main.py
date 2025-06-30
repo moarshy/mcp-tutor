@@ -64,7 +64,7 @@ async def main():
     
     # Initialize course processor
     try:
-        COURSE_DIR = os.getenv("COURSE_DIR", "nbs/course_output")
+        COURSE_DIR = os.getenv("COURSE_DIR", "./course_output")
         course_processor = CourseContentProcessor(COURSE_DIR)
         course_processor.scan_courses()
         courses = course_processor.list_courses()
