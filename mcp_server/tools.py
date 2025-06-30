@@ -158,8 +158,8 @@ async def _handle_get_course_outline(arguments: Dict[str, Any], course_processor
     result += "## Modules\n\n"
     for module in course.modules:
         result += f"### {module.order + 1}. {module.title}\n"
-        result += f"**Module ID**: {module.module_id}\n"
-        result += f"**Available Steps**: {', '.join(module.steps.keys())}\n\n"
+        # result += f"**Module ID**: {module.module_id}\n"
+        # result += f"**Available Steps**: {', '.join(module.steps.keys())}\n\n"
     
     return [TextContent(type="text", text=result)]
 
@@ -177,9 +177,10 @@ async def _handle_get_module_content(arguments: Dict[str, Any], course_processor
     if not module:
         return [TextContent(type="text", text=f"Module not found: {module_id}")]
     
-    result = f"# {module.title}\n\n"
-    result += f"**Module ID**: {module.module_id}\n"
-    result += f"**Course**: {course.title} ({level.title()})\n\n"
+    result = ""
+    # result = f"# {module.title}\n\n"
+    # result += f"**Module ID**: {module.module_id}\n"
+    # result += f"**Course**: {course.title} ({level.title()})\n\n"
     
     # Include all steps
     step_order = ["intro", "main", "conclusion", "assessments", "summary"]
@@ -221,6 +222,7 @@ async def _handle_get_step_content(arguments: Dict[str, Any], course_processor) 
     return [TextContent(type="text", text=result)]
 
 
+# TODO: This is currently simple search. We need to improve it to be more like a real search engine.
 async def _handle_search_course_content(arguments: Dict[str, Any], course_processor) -> List[TextContent]:
     """Handle search_course_content tool"""
     query = arguments.get("query", "").lower()

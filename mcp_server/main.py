@@ -46,16 +46,16 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[TextCon
     return await handle_tool_call(name, arguments, course_processor)
 
 
-@server.list_prompts()
-async def handle_list_prompts() -> List[Prompt]:
-    """List available prompts"""
-    return get_prompt_definitions()
+# @server.list_prompts()
+# async def handle_list_prompts() -> List[Prompt]:
+#     """List available prompts"""
+#     return get_prompt_definitions()
 
 
-@server.get_prompt()
-async def handle_get_prompt(name: str, arguments: Dict[str, str]) -> List[PromptMessage]:
-    """Handle prompt requests"""
-    return await handle_prompt_request(name, arguments, course_processor)
+# @server.get_prompt()
+# async def handle_get_prompt(name: str, arguments: Dict[str, str]) -> List[PromptMessage]:
+#     """Handle prompt requests"""
+#     return await handle_prompt_request(name, arguments, course_processor)
 
 
 async def main():
