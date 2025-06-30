@@ -377,12 +377,24 @@ class DocumentParserModule(dspy.Module):
             
             # Parse LLM outputs with safe extraction
             semantic_summary = getattr(classification, 'semantic_summary', f"Documentation for {basic_data['title']}")
-            key_concepts_str = getattr(classification, 'key_concepts', "")
-            learning_objectives_str = getattr(classification, 'learning_objectives', "")
             
-            # Convert comma-separated strings to lists
-            key_concepts = [concept.strip() for concept in key_concepts_str.split(",") if concept.strip()] if key_concepts_str else []
-            learning_objectives = [obj.strip() for obj in learning_objectives_str.split(",") if obj.strip()] if learning_objectives_str else []
+            # Safely handle key_concepts (could be string or list)
+            key_concepts_raw = getattr(classification, 'key_concepts', "")
+            if isinstance(key_concepts_raw, list):
+                key_concepts = key_concepts_raw
+            elif isinstance(key_concepts_raw, str):
+                key_concepts = [concept.strip() for concept in key_concepts_raw.split(",") if concept.strip()] if key_concepts_raw else []
+            else:
+                key_concepts = []
+            
+            # Safely handle learning_objectives (could be string or list)
+            learning_objectives_raw = getattr(classification, 'learning_objectives', "")
+            if isinstance(learning_objectives_raw, list):
+                learning_objectives = learning_objectives_raw
+            elif isinstance(learning_objectives_raw, str):
+                learning_objectives = [obj.strip() for obj in learning_objectives_raw.split(",") if obj.strip()] if learning_objectives_raw else []
+            else:
+                learning_objectives = []
             
             doc_type = self._safe_enum_parse(classification.doc_type, DocumentType, DocumentType.GUIDE)
             
