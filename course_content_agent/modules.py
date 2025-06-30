@@ -800,7 +800,7 @@ class CourseGenerator(dspy.Module):
         
         result = self.assessment_content_generator(
             assessment_title=module.assessment.title,
-            concepts_to_assess=module.assessment.concepts_to_assess,
+            concepts_to_assess=", ".join(module.assessment.concepts_to_assess),
             module_theme=module.theme
         )
         return result.assessment_content
@@ -810,8 +810,8 @@ class CourseGenerator(dspy.Module):
         
         result = self.summary_generator(
             module_title=module.title,
-            learning_objectives=module.learning_objectives,
-            key_concepts=module.assessment.concepts_to_assess,
+            learning_objectives=", ".join(module.learning_objectives),
+            key_concepts=", ".join(module.assessment.concepts_to_assess),
             overview_context=overview_context
         )
         return result.summary
