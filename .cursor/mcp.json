@@ -3,6 +3,10 @@
       "mastra": {
         "command": "npx",
         "args": ["-y", "@mastra/mcp-docs-server"]
+      },
+      "educational-tutor": {
+        "command": "python",
+        "args": ["mcp_server/main.py"]
       }
     }
   }
