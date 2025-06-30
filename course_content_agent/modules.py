@@ -18,8 +18,8 @@ from .models import (
     ModuleContent, GeneratedCourse
 )
 from .signatures import (
-    DocumentParser, DocumentClassifier, DocumentClusterer,
-    WelcomeMessageGenerator, CourseIntroGenerator, ModuleIntroGenerator, ModuleMainContentGenerator, 
+    DocumentClassifier, DocumentClusterer,
+    WelcomeMessageGenerator, ModuleIntroGenerator, ModuleMainContentGenerator, 
     ModuleConclusionGenerator, ModuleSummaryGenerator, AssessmentContentGenerator, 
     CourseConclusionGenerator
 )
@@ -69,6 +69,12 @@ def process_llm_analysis(args):
     result, tree_root_path, overview_context = args
     
     try:
+        # Load environment variables and configure DSPy for this worker process (needed for multiprocessing)
+        from dotenv import load_dotenv
+        import dspy
+        load_dotenv()
+        dspy.configure(lm=dspy.LM("gemini/gemini-2.5-flash", cache=False, max_tokens=20000, temperature=0.))
+        
         relative_path = result['relative_path']
         
         # Initialize parser module for this worker process
@@ -126,17 +132,11 @@ def create_basic_metadata_from_result(result):
         headings=basic_data['headings'],
         code_blocks=basic_data['code_blocks'],
         frontmatter=basic_data['frontmatter'],
-        doc_type=DocumentType.GUIDE,
-        complexity=ComplexityLevel.INTERMEDIATE,
-        topics=[],
-        key_concepts=[],
-        prerequisites=[],
-        learning_objectives=[],
-        semantic_summary=f"Documentation for {basic_data['title']}",
         primary_language=basic_data['primary_language'],
-        has_examples=basic_data['has_examples'],
-        has_api_docs=basic_data['has_api_docs'],
-        difficulty_score=0.5
+        doc_type=DocumentType.GUIDE,
+        key_concepts=[],
+        learning_objectives=[],
+        semantic_summary=f"Documentation for {basic_data['title']}"
     )
 
 # =============================================================================
@@ -285,17 +285,13 @@ class ContentExtractor:
         
         # Compute additional features
         primary_language = ContentExtractor._get_primary_language(code_blocks)
-        has_examples = ContentExtractor._has_code_examples(code_blocks, clean_content)
-        has_api_docs = ContentExtractor._has_api_documentation(clean_content, headings)
         
         return {
             'title': title,
             'headings': headings,
             'code_blocks': code_blocks,
             'frontmatter': frontmatter_data,
-            'primary_language': primary_language,
-            'has_examples': has_examples,
-            'has_api_docs': has_api_docs
+            'primary_language': primary_language
         }
     
     @staticmethod
@@ -351,28 +347,6 @@ class ContentExtractor:
             return None
         
         return max(lang_chars.items(), key=lambda x: x[1])[0]
-    
-    @staticmethod
-    def _has_code_examples(code_blocks: List[Dict[str, str]], content: str) -> bool:
-        """Check if document contains practical code examples"""
-        if not code_blocks:
-            return False
-        
-        # Look for example indicators
-        example_indicators = ['example', 'demo', 'sample', 'usage', 'how to use']
-        content_lower = content.lower()
-        
-        return any(indicator in content_lower for indicator in example_indicators) and len(code_blocks) > 0
-    
-    @staticmethod
-    def _has_api_documentation(content: str, headings: List[str]) -> bool:
-        """Check if document contains API documentation"""
-        api_indicators = ['api', 'endpoint', 'method', 'function', 'parameter', 'response', 'request']
-        
-        content_lower = content.lower()
-        headings_lower = ' '.join(headings).lower()
-        
-        return any(indicator in content_lower or indicator in headings_lower for indicator in api_indicators)
 
 # =============================================================================
 # Document Parser Module
@@ -383,7 +357,6 @@ class DocumentParserModule(dspy.Module):
     
     def __init__(self):
         super().__init__()
-        self.parser = dspy.ChainOfThought(DocumentParser)
         self.classifier = dspy.ChainOfThought(DocumentClassifier)
     
     def forward(self, content: str, filename: str, filepath: Path, overview_context: str = "") -> DocumentMetadata:
@@ -396,45 +369,30 @@ class DocumentParserModule(dspy.Module):
         DOCUMENT_PARSER_MAX_CHARS = 3000
         
         try:
-            # Get LLM-enhanced semantic understanding
-            parse_result = self.parser(
-                content=content[:DOCUMENT_PARSER_MAX_CHARS],
-                filename=filename,
-                overview_context=overview_context
-            )
-            
-            # Parse LLM outputs - now direct access since they're List[str] with safe extraction
-            key_concepts = getattr(parse_result, 'key_concepts', []) if hasattr(parse_result, 'key_concepts') and isinstance(getattr(parse_result, 'key_concepts'), list) else []
-            learning_objectives = getattr(parse_result, 'learning_objectives', []) if hasattr(parse_result, 'learning_objectives') and isinstance(getattr(parse_result, 'learning_objectives'), list) else []
-            prerequisites = getattr(parse_result, 'prerequisites', []) if hasattr(parse_result, 'prerequisites') and isinstance(getattr(parse_result, 'prerequisites'), list) else []
-            
-            # Classify the document
+            # Get LLM-enhanced analysis using single classifier
             classification = self.classifier(
-                title=basic_data['title'],
                 content=content[:DOCUMENT_PARSER_MAX_CHARS],
-                headings=str(basic_data['headings'][:10]),
-                semantic_summary=parse_result.semantic_summary,
                 overview_context=overview_context
             )
             
-            # Parse classification outputs - topics is now List[str] with safe extraction
-            topics = getattr(classification, 'topics', []) if hasattr(classification, 'topics') and isinstance(getattr(classification, 'topics'), list) else []
+            # Parse LLM outputs with safe extraction
+            semantic_summary = getattr(classification, 'semantic_summary', f"Documentation for {basic_data['title']}")
+            key_concepts_str = getattr(classification, 'key_concepts', "")
+            learning_objectives_str = getattr(classification, 'learning_objectives', "")
+            
+            # Convert comma-separated strings to lists
+            key_concepts = [concept.strip() for concept in key_concepts_str.split(",") if concept.strip()] if key_concepts_str else []
+            learning_objectives = [obj.strip() for obj in learning_objectives_str.split(",") if obj.strip()] if learning_objectives_str else []
+            
             doc_type = self._safe_enum_parse(classification.doc_type, DocumentType, DocumentType.GUIDE)
-            complexity = self._safe_enum_parse(classification.complexity, ComplexityLevel, ComplexityLevel.INTERMEDIATE)
             
         except Exception as e:
             logger.error(f"LLM parsing failed for {filename}: {e}")
             # Fallback to basic classification
+            semantic_summary = f"Documentation for {basic_data['title']}"
             key_concepts = []
             learning_objectives = []
-            prerequisites = []
-            topics = []
             doc_type = DocumentType.GUIDE
-            complexity = ComplexityLevel.INTERMEDIATE
-            parse_result = type('obj', (object,), {
-                'semantic_summary': f"Documentation for {basic_data['title']}"
-            })()
-            classification = type('obj', (object,), {'difficulty_score': 0.5})()
         
         # Create comprehensive metadata
         return DocumentMetadata(
@@ -443,29 +401,14 @@ class DocumentParserModule(dspy.Module):
             headings=basic_data['headings'],
             code_blocks=basic_data['code_blocks'],
             frontmatter=basic_data['frontmatter'],
+            primary_language=basic_data['primary_language'],
             
             # LLM-enhanced metadata
             doc_type=doc_type,
-            complexity=complexity,
-            topics=topics,
             key_concepts=key_concepts,
-            prerequisites=prerequisites,
             learning_objectives=learning_objectives,
-            semantic_summary=parse_result.semantic_summary,
-            
-            # Computed metadata
-            primary_language=basic_data['primary_language'],
-            has_examples=basic_data['has_examples'],
-            has_api_docs=basic_data['has_api_docs'],
-            difficulty_score=getattr(classification, 'difficulty_score', 0.5)
+            semantic_summary=semantic_summary
         )
-    
-    def _safe_json_parse(self, json_str: str, default: Any) -> Any:
-        """Safely parse JSON string with fallback"""
-        try:
-            return json.loads(json_str)
-        except:
-            return default
     
     def _safe_enum_parse(self, value: str, enum_class, default):
         """Safely parse enum value with fallback"""
@@ -525,17 +468,17 @@ class LearningPathGenerator(dspy.Module):
             logger.warning(f"No modules generated for {complexity.value} level")
             return None
         
-        # Generate welcome message
-        welcome_msg = self._generate_welcome_message(modules, complexity, repo_name)
+        # Generate comprehensive course information
+        course_info = self._generate_course_info(modules, complexity, repo_name, overview_context)
         
         # Create the complete learning path
         grouped_path = GroupedLearningPath(
             pathway_id=f"{repo_name}_{complexity.value}",
-            title=f"{repo_name.title()} - {complexity.value.title()} Course",
-            description=f"Complete {complexity.value} level course for {repo_name}",
+            title=course_info['title'],
+            description=course_info['description'],
             target_complexity=complexity,
             modules=modules,
-            welcome_message=welcome_msg
+            welcome_message=course_info['welcome_message']
         )
         
         logger.info(f"Generated learning path with {len(modules)} modules for {complexity.value}")
@@ -573,8 +516,12 @@ class LearningPathGenerator(dspy.Module):
         
         return grouped_paths
     
-    def _prepare_documents_info(self, documents: List[DocumentNode]) -> Dict[str, Any]:
+    def _prepare_documents_info(self, documents: List[DocumentNode], n: int = 1000) -> Dict[str, Any]:
         """Prepare comprehensive document information for the LLM"""
+
+        # add a function to get the first 1000 words of the document content
+        def get_first_n_words(content: str, n: int) -> str:
+            return ' '.join(content.split()[:n])
         
         docs_info = {}
         
@@ -583,18 +530,12 @@ class LearningPathGenerator(dspy.Module):
             doc_info = {
                 'title': doc.metadata.title,
                 'filename': doc.filename,
-                # 'doc_type': doc.metadata.doc_type.value if doc.metadata.doc_type else 'unknown',
                 'semantic_summary': doc.metadata.semantic_summary or "No summary available",
-                'topics': doc.metadata.topics or [],
                 'key_concepts': doc.metadata.key_concepts or [],
                 'learning_objectives': doc.metadata.learning_objectives or [],
-                'prerequisites': doc.metadata.prerequisites or [],
-                'has_examples': doc.metadata.has_examples,
-                'has_api_docs': doc.metadata.has_api_docs,
                 'primary_language': doc.metadata.primary_language,
                 'headings': doc.metadata.headings[:5] if doc.metadata.headings else [],  # First 5 headings
-                # 'content_length': len(doc.content),
-                # 'difficulty_score': doc.metadata.difficulty_score
+                'document_content': get_first_n_words(doc.content, n)
             }
             
             docs_info[doc.path] = doc_info
@@ -663,9 +604,9 @@ class LearningPathGenerator(dspy.Module):
         logger.info(f"Successfully parsed {len(modules)} modules from LLM output")
         return modules
     
-    def _generate_welcome_message(self, modules: List[LearningModule], 
-                                complexity: ComplexityLevel, repo_name: str) -> str:
-        """Generate welcome message for the learning path"""
+    def _generate_course_info(self, modules: List[LearningModule], 
+                             complexity: ComplexityLevel, repo_name: str, overview_context: str = "") -> dict:
+        """Generate comprehensive course information including title, description, and welcome message"""
         
         # Create modules overview
         modules_overview = []
@@ -673,16 +614,21 @@ class LearningPathGenerator(dspy.Module):
             modules_overview.append(f"Module {i+1}: {module.title}")
         
         try:
-            welcome_result = self.welcome_generator(
-                pathway_title=f"{repo_name.title()} - {complexity.value.title()} Course",
+            course_info_result = self.welcome_generator(
+                repo_name=repo_name,
                 target_complexity=complexity.value,
-                modules_overview="\n".join(modules_overview)
+                modules_overview="\n".join(modules_overview),
+                overview_context=overview_context
             )
             
-            return welcome_result.welcome_message
+            return {
+                'title': course_info_result.course_title,
+                'description': course_info_result.course_description,
+                'welcome_message': course_info_result.welcome_message
+            }
             
         except Exception as e:
-            logger.error(f"Error generating welcome message: {e}")
+            logger.error(f"Error generating course info: {e}")
             raise
     
 
@@ -696,13 +642,12 @@ class CourseGenerator(dspy.Module):
     def __init__(self):
         super().__init__()
         # Use Predict instead of ChainOfThought for content generators to avoid reasoning field issues
-        self.course_intro_generator = dspy.Predict(CourseIntroGenerator)
-        self.intro_generator = dspy.Predict(ModuleIntroGenerator)
-        self.main_content_generator = dspy.Predict(ModuleMainContentGenerator)
-        self.conclusion_generator = dspy.Predict(ModuleConclusionGenerator)
-        self.summary_generator = dspy.Predict(ModuleSummaryGenerator)
-        self.assessment_content_generator = dspy.Predict(AssessmentContentGenerator)
-        self.course_conclusion_generator = dspy.Predict(CourseConclusionGenerator)
+        self.intro_generator = dspy.ChainOfThought(ModuleIntroGenerator)
+        self.main_content_generator = dspy.ChainOfThought(ModuleMainContentGenerator)
+        self.conclusion_generator = dspy.ChainOfThought(ModuleConclusionGenerator)
+        self.summary_generator = dspy.ChainOfThought(ModuleSummaryGenerator)
+        self.assessment_content_generator = dspy.ChainOfThought(AssessmentContentGenerator)
+        self.course_conclusion_generator = dspy.ChainOfThought(CourseConclusionGenerator)
         self.max_workers = 10
     
     def forward(self, pathway: GroupedLearningPath, tree: DocumentTree, overview_context: str = "") -> GeneratedCourse:
@@ -714,16 +659,10 @@ class CourseGenerator(dspy.Module):
         
         logger.info(f"Generating course content for {pathway.title}")
         
-        # Generate course introduction module as the first module
-        course_intro_module = self._generate_course_intro_module(pathway, overview_context)
-        
         # Generate content for each module in parallel
         logger.info(f"Generating {len(pathway.modules)} modules in parallel...")
         parallel_module_contents = self._generate_modules_parallel(pathway, tree, overview_context)
-        
-        # Combine intro + parallel generated modules
-        module_contents = [course_intro_module] + parallel_module_contents
-        
+                
         # Generate course conclusion
         course_conclusion = self._generate_course_conclusion(pathway)
         
@@ -733,11 +672,11 @@ class CourseGenerator(dspy.Module):
             title=pathway.title,
             description=pathway.description,
             welcome_message=pathway.welcome_message,
-            modules=module_contents,
+            modules=parallel_module_contents,
             course_conclusion=course_conclusion
         )
         
-        logger.info(f"Generated complete course with {len(module_contents)} modules (including intro)")
+        logger.info(f"Generated complete course with {len(parallel_module_contents)} modules (including intro)")
         return course
     
     def _generate_modules_parallel(self, pathway: GroupedLearningPath, tree: DocumentTree, overview_context: str) -> List[ModuleContent]:
@@ -757,38 +696,7 @@ class CourseGenerator(dspy.Module):
             for future in futures:
                 module_contents.append(future.result())
 
-        return module_contents
-
-    def _generate_course_intro_module(self, pathway: GroupedLearningPath, overview_context: str) -> ModuleContent:
-        """Generate course introduction module using only overview context"""
-        
-        logger.info("Generating course introduction module")
-        
-        # Generate course introduction content
-        intro_content = self._generate_course_introduction(pathway, overview_context)
-        
-        # Create course intro module
-        course_intro_module = ModuleContent(
-            module_id="module_00_course_introduction",
-            introduction=intro_content,
-            main_content=f"# Welcome to {pathway.title}\n\n{pathway.description}\n\nThis course will guide you through understanding and mastering the concepts covered in this documentation.",
-            conclusion=f"Now that you understand what this course covers, let's dive into the detailed modules!",
-            assessment=f"# Course Introduction Assessment\n\n## Question 1\nWhat will you learn in this course?\n\n**Answer:** You will learn about {pathway.description.lower()}\n\n## Question 2\nWhat is the target complexity level?\n\n**Answer:** This course is designed for {pathway.target_complexity.value} level learners.",
-            summary=f"Great! You now have an overview of {pathway.title}. Let's begin with the detailed modules."
-        )
-        
-        return course_intro_module
-    
-    def _generate_course_introduction(self, pathway: GroupedLearningPath, overview_context: str) -> str:
-        """Generate course introduction using overview context"""
-        
-        result = self.course_intro_generator(
-            course_title=pathway.title,
-            course_description=pathway.description,
-            overview_context=overview_context,
-            target_complexity=pathway.target_complexity.value
-        )
-        return result.introduction
+        return module_contents    
     
     def _generate_module_content(self, module: LearningModule, pathway: GroupedLearningPath,
                                tree: DocumentTree, overview_context: str, module_index: int) -> ModuleContent:
@@ -835,17 +743,14 @@ class CourseGenerator(dspy.Module):
             if doc_path in tree.nodes:
                 node = tree.nodes[doc_path]
                 
-                # Filter out non-documentation content
-                cleaned_content = self._clean_document_content(node.content, node.filename)
-                
-                if cleaned_content.strip():
+                if node.content.strip():
                     doc_content = f"""
 ## {node.metadata.title}
 
-{cleaned_content}
+{node.content}
 """
                     source_content.append(doc_content)
-                    logger.info(f"Added document: {node.filename} ({len(cleaned_content)} chars)")
+                    logger.info(f"Added document: {node.filename} ({len(node.content)} chars)")
                 else:
                     logger.info(f"Skipped document {node.filename} - no relevant content after cleaning")
             else:
@@ -855,47 +760,13 @@ class CourseGenerator(dspy.Module):
         logger.info(f"Total cleaned source content length: {len(result)} chars")
         return result
     
-    def _clean_document_content(self, content: str, filename: str) -> str:
-        """Clean document content to remove configuration files and focus on documentation"""
-        
-        # Skip common configuration files that aren't documentation
-        if any(filename.lower().endswith(ext) for ext in ['.json', '.yaml', '.yml', '.toml', '.ini', '.cfg']):
-            return ""
-        
-        # Skip if content looks like pure JSON/YAML/config
-        stripped = content.strip()
-        if (stripped.startswith('{') and stripped.endswith('}')) or \
-           (stripped.startswith('[') and stripped.endswith(']')) or \
-           stripped.startswith('---') and not any(line.startswith('#') for line in content.split('\n')[:10]):
-            return ""
-        
-        # Remove frontmatter but keep the rest
-        lines = content.split('\n')
-        if lines and lines[0].strip() == '---':
-            # Find end of frontmatter
-            end_idx = 1
-            while end_idx < len(lines) and lines[end_idx].strip() != '---':
-                end_idx += 1
-            if end_idx < len(lines):
-                content = '\n'.join(lines[end_idx + 1:])
-        
-        # Remove excessive code blocks that might confuse the LLM
-        import re
-        code_blocks = re.findall(r'```[\s\S]*?```', content)
-        if len(code_blocks) > 10:  # Too many code blocks, likely not documentation
-            # Keep only the first few and add a note
-            for i, block in enumerate(code_blocks[5:], 5):
-                content = content.replace(block, f'\n[Code block {i+1} omitted for brevity]\n')
-        
-        return content
-    
     def _generate_module_introduction(self, module: LearningModule, overview_context: str, course_context: str) -> str:
         """Generate module introduction with full context"""
         
         result = self.intro_generator(
             module_title=module.title,
             module_description=module.description,
-            learning_objectives=module.learning_objectives,
+            learning_objectives=", ".join(module.learning_objectives),
             overview_context=overview_context,
             course_context=course_context
         )
@@ -907,7 +778,7 @@ class CourseGenerator(dspy.Module):
         result = self.main_content_generator(
             module_title=module.title,
             module_description=module.description,
-            learning_objectives=module.learning_objectives,
+            learning_objectives=", ".join(module.learning_objectives),
             overview_context=overview_context,
             source_documents=source_documents[:15000]  # Limit source documents to avoid context window issues
         )
@@ -918,8 +789,8 @@ class CourseGenerator(dspy.Module):
         
         result = self.conclusion_generator(
             module_title=module.title,
-            learning_objectives=module.learning_objectives,
-            key_concepts=module.assessment.concepts_to_assess,
+            learning_objectives=", ".join(module.learning_objectives),
+            key_concepts=", ".join(module.assessment.concepts_to_assess),
             overview_context=overview_context
         )
         return result.conclusion
@@ -967,7 +838,7 @@ class CourseExporter:
     """Export generated course to files"""
     
     def export_to_markdown(self, course: GeneratedCourse, output_dir: str) -> None:
-        """Export complete course as markdown files"""
+        """Export complete course as markdown files with flat module structure"""
         
         output_path = Path(output_dir)
         course_dir = output_path / course.course_id
@@ -980,31 +851,30 @@ class CourseExporter:
             f.write("---\n\n")
             f.write(course.welcome_message)
         
-        # Export each module
+        # Export each module with flat structure
         for i, module_content in enumerate(course.modules):
-            module_num = f"{i+1:02d}"
-            module_dir = course_dir / f"module_{module_num}"
+            # Use module_id directly instead of numbered folders
+            module_dir = course_dir / module_content.module_id
             module_dir.mkdir(exist_ok=True)
             
-            # Module introduction
-            with open(module_dir / "01_introduction.md", 'w', encoding='utf-8') as f:
+            # 01_intro.md
+            with open(module_dir / "01_intro.md", 'w', encoding='utf-8') as f:
                 f.write(module_content.introduction)
             
-            # Main content (documents)
-            content_dir = module_dir / "content"
-            content_dir.mkdir(exist_ok=True)
+            # 02_main.md
+            with open(module_dir / "02_main.md", 'w', encoding='utf-8') as f:
+                f.write(module_content.main_content)
             
-            for j, doc_content in enumerate(module_content.main_content):
-                doc_num = f"{j+1:02d}"
-                with open(content_dir / f"{doc_num}_document.md", 'w', encoding='utf-8') as f:
-                    f.write(doc_content)
+            # 03_conclusion.md
+            with open(module_dir / "03_conclusion.md", 'w', encoding='utf-8') as f:
+                f.write(module_content.conclusion)
             
-            # Assessment
-            with open(module_dir / "03_assessment.md", 'w', encoding='utf-8') as f:
+            # 04_assessments.md
+            with open(module_dir / "04_assessments.md", 'w', encoding='utf-8') as f:
                 f.write(module_content.assessment)
             
-            # Module summary
-            with open(module_dir / "04_summary.md", 'w', encoding='utf-8') as f:
+            # 05_summary.md
+            with open(module_dir / "05_summary.md", 'w', encoding='utf-8') as f:
                 f.write(module_content.summary)
         
         # Export course conclusion
@@ -1018,7 +888,7 @@ class CourseExporter:
             "modules": [
                 {
                     "module_id": module.module_id,
-                    "documents_count": len(module.main_content)
+                    "files": ["01_intro.md", "02_main.md", "03_conclusion.md", "04_assessments.md", "05_summary.md"]
                 }
                 for module in course.modules
             ]

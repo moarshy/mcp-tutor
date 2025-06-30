@@ -35,21 +35,13 @@ class DocumentMetadata(BaseModel):
     headings: List[str]
     code_blocks: List[Dict[str, str]] 
     frontmatter: Dict[str, Any]
+    primary_language: Optional[str] = None
     
     # LLM-enhanced metadata
     doc_type: Optional[DocumentType] = DocumentType.GUIDE
-    complexity: Optional[ComplexityLevel] = None
-    topics: List[str] = Field(default_factory=list)
     key_concepts: List[str] = Field(default_factory=list)
-    prerequisites: List[str] = Field(default_factory=list)
     learning_objectives: List[str] = Field(default_factory=list)
-    
-    # Computed metadata
     semantic_summary: Optional[str] = None
-    primary_language: Optional[str] = None
-    has_examples: bool = False
-    has_api_docs: bool = False
-    difficulty_score: Optional[float] = None  # 0-1 scale
 
 class DocumentNode(BaseModel):
     """Represents a single documentation file"""

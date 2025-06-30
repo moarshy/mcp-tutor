@@ -285,8 +285,7 @@ class CourseBuilder:
         """
         try:
             # Convert to Path object
-            repo_path = Path(repo_path).resolve()
-            
+             
             # Check if repo exists
             if not repo_path.exists():
                 logger.error(f"Repository path does not exist: {repo_path}")
@@ -305,9 +304,12 @@ class CourseBuilder:
             logger.info(f"Cache directory: {cache_path}")
             if include_folders:
                 logger.info(f"Including folders: {include_folders}")
+
+            # Clone the repo
+            repo_path = self.repo_manager.clone_or_update_repo(repo_path)
             
             # Find documentation files using existing repo manager
-            doc_files = self.repo_manager.find_documentation_files(repo_path, include_folders=include_folders)
+            doc_files = self.repo_manager.find_documentation_files(repo_path.as_posix(), include_folders=include_folders)
             
             if not doc_files:
                 logger.error("No documentation files found in repository")
