@@ -9,10 +9,10 @@ from mcp_server.models import CourseState
 from mcp_server.prompts import INTRODUCTION_PROMPT, get_module_prompt
 from mcp_server.user_management import (
     clear_course_history as clear_history,
+    create_user_profile,
     get_user_credentials,
     load_course_state,
     save_course_state,
-    save_user_credentials,
 )
 
 logger = logging.getLogger(__name__)
@@ -31,7 +31,12 @@ class CourseTools:
             logger.warning("Registration attempt failed: User is already registered.")
             return "You are already registered. Use `start_course` to begin."
 
-        creds = save_user_credentials()
+        email = arguments.get("email")
+        if not email:
+            logger.warning("Registration attempt failed: email argument not provided.")
+            return "The `register_user` tool requires an `email` argument."
+
+        creds = create_user_profile(email=email)
         logger.info(f"New user registered successfully with user_id: {creds['user_id']}")
         return INTRODUCTION_PROMPT
 

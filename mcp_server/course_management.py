@@ -28,36 +28,44 @@ class CourseContentProcessor:
         This represents the latest version of the course content on disk.
         """
         level_dir = self.course_directory / level
-        if not level_dir.is_dir():
-            logger.warning(f"Course level directory not found: {level_dir}")
+        course_info_path = level_dir / "course_info.json"
+
+        if not course_info_path.is_file():
+            logger.warning(f"Course info file not found: {course_info_path}")
+            return None
+
+        try:
+            with open(course_info_path, "r", encoding="utf-8") as f:
+                course_data = json.load(f)
+        except (json.JSONDecodeError, IOError) as e:
+            logger.error(f"Error reading or parsing course info file {course_info_path}: {e}")
             return None
 
         modules = []
-        module_dirs = sorted(
-            [d for d in level_dir.iterdir() if d.is_dir() and not d.name.startswith(".")],
-            key=lambda d: d.name,
-        )
-
-        for module_dir in module_dirs:
-            module_name = re.sub(r"^\d+-", "", module_dir.name)
-            step_files = sorted(
-                [f for f in module_dir.glob("*.md") if not f.name.startswith(".")],
-                key=lambda f: f.name,
-            )
-
+        total_steps = 0
+        for module_data in course_data.get("modules", []):
+            module_name = re.sub(r"^\d+-", "", module_data["module_id"])
             steps = []
-            for step_file in step_files:
-                step_name = re.sub(r"^\d+-", "", step_file.stem)
+            for step_file in module_data.get("files", []):
+                step_name = re.sub(r"^\d+-", "", Path(step_file).stem)
                 steps.append(StepState(name=step_name, status=0))
 
             if steps:
                 modules.append(ModuleState(name=module_name, status=0, steps=steps))
+                total_steps += len(steps)
 
         if not modules:
-            logger.warning(f"No modules found for level '{level}'.")
+            logger.warning(f"No modules found for level '{level}' in {course_info_path}.")
             return None
 
-        return CourseState(current_module=modules[0].name, modules=modules)
+        return CourseState(
+            level=level,
+            name=course_data.get("title", "Untitled Course"),
+            description=course_data.get("description", "No description available."),
+            total_steps=total_steps,
+            current_module=modules[0].name,
+            modules=modules,
+        )
 
     def merge_course_states(self, current_state: CourseState, new_state: CourseState) -> CourseState:
         """
@@ -99,7 +107,14 @@ class CourseContentProcessor:
         if not any(module.name == current_module_name for module in merged_modules):
             current_module_name = merged_modules[0].name if merged_modules else ""
 
-        return CourseState(current_module=current_module_name, modules=merged_modules)
+        return CourseState(
+            level=new_state.level,
+            name=new_state.name,
+            description=new_state.description,
+            total_steps=new_state.total_steps,
+            current_module=current_module_name,
+            modules=merged_modules,
+        )
 
     def read_course_step(self, level: str, module_name: str, step_name: str) -> Optional[str]:
         """

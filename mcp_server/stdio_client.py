@@ -14,6 +14,11 @@ from mcp.client.stdio import stdio_client
 async def test_server_capabilities():
     """Connect to MCP server and list all available tools and prompts."""
     
+    # Clear any existing cache for a clean test run
+    if os.path.exists(".cache"):
+        shutil.rmtree(".cache")
+        print("Cleared .cache/ for a clean test run.")
+        
     # Create server parameters for stdio connection
     server_params = StdioServerParameters(
         command="python",
@@ -63,11 +68,11 @@ async def test_server_capabilities():
 
                 # --- Test Execution ---
                 print("\n" + "=" * 60)
-                print("RUNNING TESTS")
+                print("RUNNING END-TO-END TESTS")
                 print("=" * 60)
 
-                # Test listing available courses
-                print("\n🧪 TESTING 'list_courses'...")
+                # 1. List courses
+                print("\n🧪 TEST 1: list_courses")
                 print("-" * 40)
                 try:
                     tool_result = await session.call_tool("list_courses", {})
@@ -80,76 +85,73 @@ async def test_server_capabilities():
                 except Exception as e:
                     print(f"    Error calling list_courses: {e}")
 
-                # Test starting a course without being registered
-                print("\n🧪 TESTING 'start_course' (unregistered)...")
+                # 2. Try to start a course without being registered
+                print("\n🧪 TEST 2: start_course (unregistered)")
                 print("-" * 40)
-
                 try:
-                    # Clear any existing cache for a clean test
-                    if os.path.exists(".cache"):
-                        shutil.rmtree(".cache")
-                        print("Cleared .cache/ for a clean test run.")
-
                     tool_result = await session.call_tool("start_course", {"level": "beginner"})
-                    
                     if tool_result.content:
                         for content in tool_result.content:
                             if hasattr(content, 'text'):
                                 print(f"Response: {content.text}")
                     else:
                         print("No content returned from start_course")
-                        
                 except Exception as e:
                     print(f"    Error calling start_course: {e}")
 
-                # Test registering a new user
-                print("\n🧪 TESTING 'register_user'...")
+                # 3. Register a new user
+                print("\n🧪 TEST 3: register_user (new user)")
                 print("-" * 40)
-
                 try:
-                    tool_result = await session.call_tool("register_user", {})
-                    
+                    tool_result = await session.call_tool("register_user", {"email": "test.user@example.com"})
                     if tool_result.content:
                         for content in tool_result.content:
                             if hasattr(content, 'text'):
                                 print(f"Response:\n{content.text}")
                     else:
                         print("No content returned from register_user")
-                        
                 except Exception as e:
                     print(f"    Error calling register_user: {e}")
 
-                # Test starting a course after being registered
-                print("\n🧪 TESTING 'start_course' (registered)...")
+                # 4. Try to register again
+                print("\n🧪 TEST 4: register_user (already registered)")
                 print("-" * 40)
+                try:
+                    tool_result = await session.call_tool("register_user", {"email": "another.user@example.com"})
+                    if tool_result.content:
+                        for content in tool_result.content:
+                            if hasattr(content, 'text'):
+                                print(f"Response:\n{content.text}")
+                    else:
+                        print("No content returned from register_user")
+                except Exception as e:
+                    print(f"    Error calling register_user: {e}")
 
+                # 5. Start a course after being registered
+                print("\n🧪 TEST 5: start_course (registered)")
+                print("-" * 40)
                 try:
                     tool_result = await session.call_tool("start_course", {"level": "beginner"})
-                    
                     if tool_result.content:
                         for content in tool_result.content:
                             if hasattr(content, 'text'):
                                 print(f"Response:\n{content.text}")
                     else:
                         print("No content returned from start_course")
-                        
                 except Exception as e:
                     print(f"    Error calling start_course: {e}")
 
-                # Test getting the course status
-                print("\n🧪 TESTING 'get_course_status'...")
+                # 6. Get the course status
+                print("\n🧪 TEST 6: get_course_status")
                 print("-" * 40)
-
                 try:
                     tool_result = await session.call_tool("get_course_status", {})
-                    
                     if tool_result.content:
                         for content in tool_result.content:
                             if hasattr(content, 'text'):
                                 print(f"Response:\n{content.text}")
                     else:
                         print("No content returned from get_course_status")
-                        
                 except Exception as e:
                     print(f"    Error calling get_course_status: {e}")
                 

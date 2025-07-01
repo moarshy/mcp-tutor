@@ -47,28 +47,31 @@ def get_user_credentials() -> Optional[Dict[str, str]]:
         return None
 
 
-def save_user_credentials() -> Dict[str, str]:
+def create_user_profile(email: str) -> Dict[str, str]:
     """
-    Generates and saves new user credentials.
+    Generates and saves a new user profile with email and credentials.
+
+    Args:
+        email: The user's email address.
 
     Returns:
-        The newly created credentials.
+        The newly created credentials dictionary including the email.
     """
     _ensure_cache_dir_exists()
     new_user_id = str(uuid.uuid4())
     new_key = secrets.token_hex(16)
-    credentials = {"user_id": new_user_id, "key": new_key}
+    profile_data = {"user_id": new_user_id, "key": new_key, "email": email}
 
     try:
         with open(USER_PROFILE_PATH, "w", encoding="utf-8") as f:
-            json.dump(credentials, f, indent=4)
+            json.dump(profile_data, f, indent=4)
         os.chmod(USER_PROFILE_PATH, 0o600)  # Read/write for owner only
-        logger.info(f"Saved new user credentials for user_id: {new_user_id}")
+        logger.info(f"Saved new user profile for user_id: {new_user_id} with email: {email}")
     except IOError as e:
-        logger.error(f"Failed to save user credentials: {e}")
+        logger.error(f"Failed to save user profile: {e}")
         raise
 
-    return credentials
+    return profile_data
 
 
 def load_course_state() -> Optional[CourseState]:

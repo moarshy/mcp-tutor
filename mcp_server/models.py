@@ -27,5 +27,9 @@ class CourseState(BaseModel):
     """
     Represents the complete state of a user's progress through the course.
     """
+    level: str = Field(..., description="The course level (e.g., 'beginner').")
+    name: str = Field(..., description="The full name of the course.")
+    description: str = Field(..., description="A detailed description of the course.")
+    total_steps: int = Field(..., description="The total number of steps in the course.")
     current_module: str = Field(..., description="The name of the module the user is currently on.")
     modules: List[ModuleState] = Field(default_factory=list) 

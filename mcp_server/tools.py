@@ -20,7 +20,14 @@ def get_tool_definitions() -> List[Tool]:
         Tool(
             name="register_user",
             description="Register to start the interactive course.",
-            inputSchema={"type": "object", "properties": {}, "additionalProperties": False},
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "email": {"type": "string", "description": "The email address for the user."}
+                },
+                "required": ["email"],
+                "additionalProperties": False,
+            },
         ),
         Tool(
             name="start_course",
@@ -52,7 +59,7 @@ def get_tool_definitions() -> List[Tool]:
         ),
          Tool(
             name="list_courses",
-            description="List all available course levels.",
+            description="List all available courses with detailed information.",
             inputSchema={"type": "object", "properties": {}, "additionalProperties": False},
         ),
     ]
@@ -79,7 +86,8 @@ async def handle_tool_call(
 
 
 async def _handle_list_courses(course_processor: CourseContentProcessor) -> List[TextContent]:
-    """Handles the list_courses tool by scanning the course directory."""
+    """Handles the list_courses tool by scanning for and detailing available courses."""
+    logger.info("Listing available courses.")
     course_levels = []
     for item in course_processor.course_directory.iterdir():
         if item.is_dir() and not item.name.startswith('.'):
@@ -88,10 +96,18 @@ async def _handle_list_courses(course_processor: CourseContentProcessor) -> List
                  course_levels.append(item.name)
 
     if not course_levels:
+        logger.warning("No courses found during scan.")
         return [TextContent(type="text", text="No courses found.")]
 
-    result = "Available Courses:\n\n"
+    report = "# Available Courses\n\n"
     for level in sorted(course_levels):
-        result += f"• {level.title()}\n"
-    
-    return [TextContent(type="text", text=result)] 
+        course_state = course_processor.scan_course_content(level)
+        if course_state:
+            report += f"## {course_state.name} (`{level}`)\n"
+            report += f"{course_state.description}\n\n"
+            report += f"*   **Modules:** {len(course_state.modules)}\n"
+            report += f"*   **Total Steps:** {course_state.total_steps}\n\n"
+        else:
+            logger.warning(f"Could not load details for course level: {level}")
+
+    return [TextContent(type="text", text=report)] 
