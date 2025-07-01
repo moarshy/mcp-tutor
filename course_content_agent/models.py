@@ -101,6 +101,9 @@ class GroupedLearningPath(BaseModel):
 class ModuleContent(BaseModel):
     """Generated content for a single module - all 5 components"""
     module_id: str
+    title: str = Field(..., description="The title of the learning module.")
+    description: str = Field(..., description="A detailed description of the module's content and goals.")
+    learning_objectives: List[str] = Field(default_factory=list, description="List of learning objectives for the module.")
     introduction: str  # Module introduction content (markdown)
     main_content: str  # Synthesized main content from source documents (markdown)
     conclusion: str  # Module conclusion content (markdown)

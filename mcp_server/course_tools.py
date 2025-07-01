@@ -107,7 +107,9 @@ class CourseTools:
         report = "# Course Progress\n\n"
         for module in user_progress.modules:
             status_icon = "✅" if module.status == 2 else ("🔶" if module.status == 1 else "⬜")
-            report += f"### {status_icon} {module.name}\n"
+            report += f"### {status_icon} {module.title}\n"
+            if module.description:
+                report += f"> {module.description}\n\n"
             for step in module.steps:
                 step_icon = "✅" if step.status == 2 else ("🔶" if step.status == 1 else "⬜")
                 report += f"- {step_icon} {step.name}\n"

@@ -51,7 +51,14 @@ class CourseContentProcessor:
                 steps.append(StepState(name=step_name, status=0))
 
             if steps:
-                modules.append(ModuleState(name=module_name, status=0, steps=steps))
+                modules.append(ModuleState(
+                    name=module_name,
+                    title=module_data.get("title", "Untitled Module"),
+                    description=module_data.get("description", ""),
+                    learning_objectives=module_data.get("learning_objectives", []),
+                    status=0,
+                    steps=steps
+                ))
                 total_steps += len(steps)
 
         if not modules:
@@ -98,9 +105,10 @@ class CourseContentProcessor:
             else:
                 module_status = 0
 
-            merged_modules.append(
-                ModuleState(name=new_module.name, status=module_status, steps=merged_steps)
-            )
+            merged_module = new_module.copy(deep=True)
+            merged_module.status = module_status
+            merged_module.steps = merged_steps
+            merged_modules.append(merged_module)
 
         # Ensure the current module still exists
         current_module_name = current_state.current_module

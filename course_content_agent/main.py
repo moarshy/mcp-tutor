@@ -10,8 +10,8 @@ import dspy
 from typing import Optional, List
 import pickle
 
-from .models import DocumentTree, ComplexityLevel, DocumentType
-from .modules import (
+from course_content_agent.models import DocumentTree, ComplexityLevel, DocumentType
+from course_content_agent.modules import (
     RepoManager, LearningPathGenerator, CourseGenerator, CourseExporter,
     process_single_document, process_llm_analysis
 )

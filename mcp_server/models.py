@@ -19,6 +19,9 @@ class ModuleState(BaseModel):
     Represents the state of a module, including all its steps.
     """
     name: str = Field(..., description="The name of the module, derived from the directory name.")
+    title: str = Field(..., description="The user-facing title of the module.")
+    description: str = Field(..., description="A description of the module's content.")
+    learning_objectives: List[str] = Field(default_factory=list, description="A list of learning objectives for the module.")
     status: int = Field(default=0, description="0: not started, 1: in progress, 2: completed")
     steps: List[StepState] = Field(default_factory=list)
 
