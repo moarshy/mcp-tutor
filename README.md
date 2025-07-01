@@ -39,14 +39,23 @@ tutor/
 
 ## 🚀 Quick Start
 
-### 1. Generate Courses from Documentation
+### 1. Install Dependencies and Create Virtual Environment
+
+This project uses `uv` for fast Python package management.
 
 ```bash
-# Install dependencies
-pip install -e .
+# Create a virtual environment
+python -m uv venv
 
+# Install dependencies in editable mode
+.venv/bin/uv pip install -e .
+```
+
+### 2. Generate Courses from Documentation
+
+```bash
 # Generate courses from a repository
-python course_content_agent/test.py
+.venv/bin/uv run python course_content_agent/test.py
 ```
 
 **Customize for Your Repository**: Edit `course_content_agent/test.py` to change:
@@ -54,21 +63,21 @@ python course_content_agent/test.py
 - Include/exclude specific folders
 - Output directory and caching settings
 
-### 2. Start MCP Server
+### 3. Start MCP Server
 
 ```bash
 # Serve generated courses via MCP protocol
-python -m mcp_server.main
+.venv/bin/uv run python -m mcp_server.main
 
 # Or customize course directory
-COURSE_DIR=your_course_output python -m mcp_server.main
+COURSE_DIR=your_course_output .venv/bin/uv run python -m mcp_server.main
 ```
 
-### 3. Test MCP Integration
+### 4. Test MCP Integration
 
 ```bash
 # Test server capabilities
-python mcp_server/stdio_client.py
+.venv/bin/uv run python mcp_server/stdio_client.py
 ```
 
 ## 📖 Detailed Documentation
@@ -93,11 +102,15 @@ To use the educational tutor MCP server with Cursor, create a `.cursor/mcp.json`
 {
     "mcpServers": {
         "educational-tutor": {
-            "command": "/path/to/your/python",
-            "args": ["-m", "mcp_server.main"],
-            "cwd": "/path/to/tutor/project",
+            "command": "/path/to/tutor/project/.venv/bin/uv",
+            "args": [
+                "--directory",
+                "/path/to/tutor/project",
+                "run",
+                "mcp_server/main.py"
+            ],
             "env": {
-                "COURSE_DIR": "/path/to/tutor/course_output"
+                "COURSE_DIR": "/path/to/tutor/project/course_output"
             }
         }
     }
@@ -105,11 +118,11 @@ To use the educational tutor MCP server with Cursor, create a `.cursor/mcp.json`
 ```
 
 **Setup Steps**:
-1. Update the `command` path to your Python executable (`which python`)
-2. Update the `cwd` path to your tutor project directory
-3. Update the `COURSE_DIR` to your course output directory
-4. Restart Cursor or reload the window
-5. Use `@educational-tutor` in Cursor chat to access course tools
+1. Create a virtual environment: `python -m uv venv`
+2. Install dependencies: `.venv/bin/uv pip install -e .`
+3. Update the `command` path and the path in `args` to your project directory.
+4. Restart Cursor or reload the window.
+5. Use `@educational-tutor` in Cursor chat to access course tools.
 
 ## 🔧 Development Status
 

@@ -4,10 +4,10 @@ Stateful course interaction tools.
 import logging
 from typing import Any, Dict
 
-from .course_management import CourseContentProcessor
-from .models import CourseState
-from .prompts import INTRODUCTION_PROMPT, get_module_prompt
-from .user_management import (
+from mcp_server.course_management import CourseContentProcessor
+from mcp_server.models import CourseState
+from mcp_server.prompts import INTRODUCTION_PROMPT, get_module_prompt
+from mcp_server.user_management import (
     clear_course_history as clear_history,
     get_user_credentials,
     load_course_state,

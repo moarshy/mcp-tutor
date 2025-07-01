@@ -6,10 +6,10 @@ Tool definitions and handlers for the interactive course system.
 
 import logging
 from typing import Any, Dict, List
-from mcp.types import Tool, TextContent
 
-from .course_management import CourseContentProcessor
-from .course_tools import CourseTools
+from mcp.types import Tool, TextContent
+from mcp_server.course_management import CourseContentProcessor
+from mcp_server.course_tools import CourseTools
 
 logger = logging.getLogger(__name__)
 

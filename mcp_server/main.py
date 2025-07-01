@@ -12,10 +12,10 @@ from mcp.server import Server
 from mcp.types import Tool, TextContent, Prompt, PromptMessage
 import mcp.server.stdio
 
-from .course_management import CourseContentProcessor
-from .course_tools import CourseTools
-from .logging_config import setup_logging
-from .tools import get_tool_definitions, handle_tool_call
+from mcp_server.course_management import CourseContentProcessor
+from mcp_server.course_tools import CourseTools
+from mcp_server.logging_config import setup_logging
+from mcp_server.tools import get_tool_definitions, handle_tool_call
 
 # Optional SSE support
 try:

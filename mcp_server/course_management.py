@@ -10,7 +10,7 @@ import re
 from pathlib import Path
 from typing import Dict, Optional
 
-from .models import CourseState, ModuleState, StepState
+from mcp_server.models import CourseState, ModuleState, StepState
 
 logger = logging.getLogger(__name__)
 
