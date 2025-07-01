@@ -1,0 +1,152 @@
+{
+  "title": "Mastering MCP: Building & Integrating LLM Applications with Model Context Protocol",
+  "description": "Unlock the power of seamless communication between LLM applications and integrations with the Model Context Protocol (MCP). This intermediate-level learning path provides a comprehensive deep dive into MCP's flexible, extensible client-server architecture. You'll start by understanding the core concepts, including context management and action execution, before progressing to advanced topics like client-server interaction patterns, transport layers (Stdio, HTTP with SSE), and message types (requests, notifications, errors).\n\nThrough practical examples and best practices, you will learn how to design, implement, and deploy robust MCP servers and clients. The course covers essential development workflows, including debugging, error handling, and performance monitoring. Furthermore, you'll explore critical considerations for secure and scalable deployments, ensuring your MCP-based solutions are production-ready. By the end of this path, you'll be equipped to confidently build, integrate, and troubleshoot sophisticated LLM applications using the Model Context Protocol.",
+  "modules": [
+    {
+      "module_id": "module_01",
+      "title": "Module 1: Introduction to Model Context Protocol (MCP)",
+      "description": "This module introduces the fundamental concepts of the Model Context Protocol (MCP), including its client-server architecture, core components like the protocol and transport layers, and the lifecycle of an MCP connection. It also covers the various message types used for communication and provides an overview of error handling and best practices.",
+      "learning_objectives": [
+        "Understand the client-server architecture of the Model Context Protocol (MCP).",
+        "Identify the core components of MCP, including the protocol and transport layers.",
+        "Learn about the different message types used in MCP communication.",
+        "Comprehend the lifecycle of an MCP connection, from initialization to termination.",
+        "Understand the role of transports in MCP communication.",
+        "Identify the different JSON-RPC message types used by MCP.",
+        "Learn about the built-in stdio and SSE transport implementations.",
+        "Determine appropriate use cases for stdio and SSE transports."
+      ],
+      "files": [
+        "01_intro.md",
+        "02_main.md",
+        "03_conclusion.md",
+        "04_assessments.md",
+        "05_summary.md"
+      ]
+    },
+    {
+      "module_id": "module_02",
+      "title": "Module 2: Core MCP Capabilities: Context and Actions",
+      "description": "This module dives into the primary capabilities that MCP servers can expose to clients and LLMs. It covers how servers provide data through 'Resources', enable real-world actions via 'Tools', define reusable interaction templates with 'Prompts', and facilitate LLM completions through 'Sampling'.",
+      "learning_objectives": [
+        "Understand what Resources are within the Model Context Protocol (MCP) and how they expose data.",
+        "Comprehend the structure and purpose of Resource URIs and types.",
+        "Understand the purpose and role of Tools within the Model Context Protocol (MCP) and how they enable LLMs to perform actions.",
+        "Identify the key components of a Tool's definition and the process of discovering and invoking Tools.",
+        "Understand the purpose and benefits of Prompts in MCP and their structural components.",
+        "Be able to describe how clients discover and use available Prompts.",
+        "Understand the purpose and workflow of the MCP Sampling feature.",
+        "Identify the components and parameters of a `sampling/createMessage` request."
+      ],
+      "files": [
+        "01_intro.md",
+        "02_main.md",
+        "03_conclusion.md",
+        "04_assessments.md",
+        "05_summary.md"
+      ]
+    },
+    {
+      "module_id": "module_03",
+      "title": "Module 3: Advanced MCP Concepts & Client-Server Interaction",
+      "description": "This module explores 'Roots', a concept in MCP that allows clients to suggest operational boundaries and relevant resources to servers. It details their purpose in guiding and organizing server operations, and how clients declare and manage them.",
+      "learning_objectives": [
+        "Define what 'Roots' are in the context of MCP.",
+        "Explain the purpose and benefits of using roots.",
+        "Describe how clients and servers interact with roots.",
+        "Identify common use cases for roots.",
+        "Apply best practices when working with roots."
+      ],
+      "files": [
+        "01_intro.md",
+        "02_main.md",
+        "03_conclusion.md",
+        "04_assessments.md",
+        "05_summary.md"
+      ]
+    },
+    {
+      "module_id": "module_04",
+      "title": "Module 4: Building MCP Servers: Quickstart & Best Practices",
+      "description": "This module provides a practical quickstart guide for developers to build their first Model Context Protocol (MCP) server. It demonstrates how to create a server that exposes tools and connects to an MCP host, covering essential server concepts and environment setup.",
+      "learning_objectives": [
+        "Understand the basic architecture and capabilities of an MCP server.",
+        "Identify the core types of capabilities an MCP server can provide (resources, tools, prompts).",
+        "Set up a Python development environment for building MCP servers.",
+        "Begin building a simple MCP server that exposes tools.",
+        "Connect an MCP server to an MCP client like Claude for Desktop."
+      ],
+      "files": [
+        "01_intro.md",
+        "02_main.md",
+        "03_conclusion.md",
+        "04_assessments.md",
+        "05_summary.md"
+      ]
+    },
+    {
+      "module_id": "module_05",
+      "title": "Module 5: Building MCP Clients: Integration & Interaction",
+      "description": "This module guides client developers through building an LLM-powered chatbot client capable of integrating with Model Context Protocol (MCP) servers. It covers environment setup, API key configuration, and the fundamental code structure for managing connections and processing queries in both Python and Node.js.",
+      "learning_objectives": [
+        "Set up a Python development environment for an MCP client.",
+        "Configure an Anthropic API key for client use.",
+        "Understand the basic structure of an MCP client and implement server connection management.",
+        "Build an LLM-powered chatbot client using MCP.",
+        "Set up a Node.js development environment for an MCP client.",
+        "Install and configure necessary SDKs and dependencies for an MCP client.",
+        "Integrate an Anthropic API key into a Node.js project.",
+        "Understand the basic structure for creating an MCP client in TypeScript."
+      ],
+      "files": [
+        "01_intro.md",
+        "02_main.md",
+        "03_conclusion.md",
+        "04_assessments.md",
+        "05_summary.md"
+      ]
+    },
+    {
+      "module_id": "module_06",
+      "title": "Module 6: Debugging and Development Workflow",
+      "description": "This module provides a comprehensive guide for debugging Model Context Protocol (MCP) integrations. It outlines various debugging tools, including the MCP Inspector and Claude Desktop Developer Tools, and addresses common configuration issues and logging practices for effective troubleshooting.",
+      "learning_objectives": [
+        "Understand the various debugging tools available for MCP integrations.",
+        "Learn how to check MCP server status and view detailed logs within Claude Desktop.",
+        "Be able to use Chrome DevTools to inspect client-side errors and network activity in Claude Desktop.",
+        "Identify and resolve common MCP integration issues related to server working directories and environment variable inheritance.",
+        "Install and run the MCP Inspector tool.",
+        "Connect the MCP Inspector to different types of MCP servers (NPM, PyPi, local).",
+        "Utilize the MCP Inspector's interface to inspect server resources, prompts, and tools.",
+        "Understand how to use the MCP Inspector for testing and debugging MCP servers."
+      ],
+      "files": [
+        "01_intro.md",
+        "02_main.md",
+        "03_conclusion.md",
+        "04_assessments.md",
+        "05_summary.md"
+      ]
+    },
+    {
+      "module_id": "module_07",
+      "title": "Module 7: Advanced Development & Deployment Considerations",
+      "description": "This module covers advanced topics for MCP development, including leveraging Large Language Models (LLMs) to accelerate server and client creation. It also provides insights into the end-user experience of consuming MCP servers, offering a complete view from development to deployment.",
+      "learning_objectives": [
+        "Understand how to prepare documentation for an LLM to assist in MCP development.",
+        "Learn to effectively describe MCP server requirements to an LLM.",
+        "Apply best practices for collaborating with an LLM to build and test MCP components.",
+        "Understand the purpose of MCP Servers in Claude Desktop from a user perspective.",
+        "Locate and edit the Claude Desktop configuration file to add MCP servers.",
+        "Configure a pre-built Filesystem MCP Server to access specific directories."
+      ],
+      "files": [
+        "01_intro.md",
+        "02_main.md",
+        "03_conclusion.md",
+        "04_assessments.md",
+        "05_summary.md"
+      ]
+    }
+  ]
+}

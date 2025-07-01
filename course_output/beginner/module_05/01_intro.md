@@ -1,0 +1,8 @@
+Welcome to "Interacting with MCP: Client-Side Development & Usage," a pivotal module in your journey through the Model Context Protocol. As you've learned, MCP operates on a robust client-server architecture, where **clients** serve as the crucial interface, enabling LLM applications and users to connect with and leverage the rich context and tools provided by **MCP servers**.
+
+This module is designed to empower you with the practical skills needed to engage with the MCP ecosystem from the client perspective. We'll explore two key avenues:
+
+1.  **Utilizing Pre-built Clients:** Discover how to configure and extend existing MCP-compatible applications, such as Claude Desktop, to seamlessly integrate with pre-built MCP servers. You'll learn to unlock and expand the capabilities of these applications by connecting them to your custom or third-party servers.
+2.  **Developing Custom Clients:** Dive into the exciting world of building your own MCP clients. We'll guide you through setting up development environments for both Python and Node.js, providing you with the foundational knowledge and practical steps to implement basic client-server connection and query processing logic. This hands-on experience will enable you to create tailored LLM-powered chatbot clients that precisely meet your needs.
+
+By the end of this module, you will not only be proficient in configuring and extending existing MCP client applications but also possess the fundamental skills to develop your own custom clients, opening up a world of possibilities for integrating and interacting with LLMs.

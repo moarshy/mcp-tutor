@@ -1,0 +1,5 @@
+In this module, "Core MCP Capabilities: Context and Actions," we delved into the fundamental building blocks that empower Large Language Models (LLMs) within the Model Context Protocol (MCP). We began by understanding **Resources**, the primary mechanism for exposing data and context to LLMs, exploring their structure, URIs, and types.
+
+Next, we examined **Tools**, which are crucial for enabling LLMs to perform actions and interact with external systems. You learned about their definition, discovery, and invocation processes. We then explored **Prompts**, understanding their purpose, benefits, and structural components, along with how clients discover and utilize them to guide LLM behavior. Finally, we covered the **MCP Sampling** feature, detailing its workflow and the components of a `sampling/createMessage` request.
+
+By grasping these core capabilities—Resources for context, Tools for actions, Prompts for guidance, and Sampling for message generation—you now have a solid understanding of how MCP facilitates rich, interactive experiences for LLM applications.

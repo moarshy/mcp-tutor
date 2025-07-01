@@ -1,0 +1,5 @@
+In this introductory module, we've laid the groundwork for understanding the **Model Context Protocol (MCP)**. We explored its fundamental **client-server architecture**, identifying the distinct roles of **hosts**, **clients**, and **servers** within the MCP ecosystem.
+
+You should now grasp that MCP's primary **purpose** is to facilitate seamless and structured communication between LLM applications and various integrations, enabling the efficient exchange of context, tools, and prompts. We delved into the core components, including the **protocol layer** responsible for message framing and communication patterns, and the **transport layer** which handles the actual data exchange via mechanisms like Stdio and HTTP with SSE, all built upon JSON-RPC 2.0.
+
+We also touched upon the **connection lifecycle**, from initialization to termination, and the robust **error handling** mechanisms that ensure reliable communication. This foundational understanding is crucial as we proceed to explore more advanced aspects and practical applications of MCP in subsequent modules.

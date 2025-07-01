@@ -1,0 +1,7 @@
+This module has provided a foundational understanding of **MCP Communication Fundamentals**, equipping you with the essential knowledge to grasp how the Model Context Protocol facilitates seamless interaction between LLM applications and integrations.
+
+We explored the core architecture of MCP, distinguishing between the **protocol layer** responsible for high-level communication patterns and the **transport layer** that handles the actual data exchange. You learned about the four primary **message types**—requests, results, errors, and notifications—and their roles in defining communication flows.
+
+A key takeaway is the **lifecycle of an MCP connection**, from its initialization and subsequent message exchange to its eventual termination. We delved into the critical role of **transports** in MCP, specifically understanding how the **JSON-RPC 2.0 wire format** underpins all message exchanges. Furthermore, you can now distinguish between and apply the built-in **stdio** and **SSE transport implementations**, recognizing their suitability for different scenarios, whether local process communication or remote HTTP-based interactions.
+
+With this comprehensive understanding of MCP's communication mechanisms, you are well-prepared to explore more advanced topics and effectively leverage the protocol in your LLM application development.

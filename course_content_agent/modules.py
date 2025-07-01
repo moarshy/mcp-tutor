@@ -843,22 +843,30 @@ class CourseGenerator(dspy.Module):
 # =============================================================================
 
 class CourseExporter:
-    """Export generated course to files"""
+    """Handles exporting the generated course to markdown files."""
     
     def export_to_markdown(self, course: GeneratedCourse, output_dir: str) -> bool:
         """Exports the generated course content to a structured markdown directory."""
         
         try:
-            # Create main output directory
-            course_output_dir = Path(output_dir)
-            course_output_dir.mkdir(exist_ok=True)
+            output_path = Path(output_dir)
+            
+            # Extract complexity level from course_id for simplified folder naming
+            # e.g., "repo_name_hash_beginner" -> "beginner"
+            try:
+                complexity_level = course.course_id.split('_')[-1]
+                # Validate that it's a real complexity level
+                if complexity_level not in [c.value for c in ComplexityLevel]:
+                    complexity_level = "default"
+            except IndexError:
+                complexity_level = "default"
+
+            course_output_dir = output_path / complexity_level
+            course_output_dir.mkdir(parents=True, exist_ok=True)
             
             # Write main welcome and conclusion files
-            with open(course_output_dir / "00_welcome.md", "w", encoding="utf-8") as f:
-                f.write(course.welcome_message)
-            
-            with open(course_output_dir / "99_conclusion.md", "w", encoding="utf-8") as f:
-                f.write(course.course_conclusion)
+            (course_output_dir / "00_welcome.md").write_text(course.welcome_message, encoding="utf-8")
+            (course_output_dir / "99_conclusion.md").write_text(course.course_conclusion, encoding="utf-8")
                 
             # Create modules
             module_info_list = []
@@ -905,5 +913,5 @@ class CourseExporter:
             return True
             
         except Exception as e:
-            logger.error(f"Failed to export course: {e}")
+            logger.error(f"Failed to export course: {e}", exc_info=True)
             return False 

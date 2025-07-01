@@ -1,0 +1,5 @@
+This module has equipped you with the essential knowledge and practical skills to build robust and efficient Model Context Protocol (MCP) servers. You've learned how to set up development environments in both Python and Node.js, implement servers that effectively expose **Resources**, **Tools**, and **Prompts**, and integrate server-side sampling requests.
+
+We emphasized the importance of applying best practices for message handling, comprehensive error management, and robust security measures to ensure your MCP servers are reliable and secure. Finally, you gained hands-on experience connecting and testing your MCP servers with an MCP host like Claude for Desktop, solidifying your understanding of the entire communication flow.
+
+With these foundational skills, you are now well-prepared to develop custom MCP servers that extend the capabilities of LLM applications and integrate seamlessly into the Model Context Protocol ecosystem.

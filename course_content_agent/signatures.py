@@ -53,7 +53,7 @@ class ModuleMainContentGenerator(dspy.Signature):
     overview_context: str = dspy.InputField(desc="Overview of the entire documentation project")
     source_documents: str = dspy.InputField(desc="Markdown documentation content for this module - USE THIS CONTENT as your primary source")
     
-    main_content: str = dspy.OutputField(desc="Comprehensive educational content in markdown format. MUST extract and synthesize information from the provided source_documents. Do NOT say information is unavailable if it exists in source_documents. Start with markdown headers and provide detailed explanations based on the source material. Do not do conclusions or summaries, just provide the content.")
+    main_content: str = dspy.OutputField(desc="Comprehensive educational content in markdown format. MUST be valid markdown text starting with headers (# or ##). MUST extract and synthesize information from the provided source_documents. Do NOT generate JSON, package.json, or code configuration files. Do NOT say information is unavailable if it exists in source_documents. Provide detailed explanations based on the source material as educational content for learners.")
 
 class ModuleConclusionGenerator(dspy.Signature):
     """Generate module conclusion"""
