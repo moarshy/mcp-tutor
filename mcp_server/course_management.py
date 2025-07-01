@@ -1,212 +1,141 @@
 """
 Course Management Module for MCP Educational Tutor Server
 
-Simple local course content processor for structured course directories.
+Scans and processes course content from structured directories.
 """
 
 import json
 import logging
+import re
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
-from pydantic import BaseModel
+from .models import CourseState, ModuleState, StepState
 
 logger = logging.getLogger(__name__)
 
 
-class StepContent(BaseModel):
-    """Individual step content within a module"""
-    step_type: str                      # intro, main, conclusion, assessments, summary
-    title: str                          # Step title
-    content: str                        # Full markdown content
-    file_path: str                      # Source file path
-
-
-class ModuleStructure(BaseModel):
-    """Course module with its steps"""
-    module_id: str                      # module_01, module_02, etc.
-    title: str                          # Module title
-    steps: Dict[str, StepContent]       # Steps in this module
-    order: int = 0                      # Module order in course
-
-
-class CourseStructure(BaseModel):
-    """Complete course structure with metadata"""
-    level: str                          # beginner, intermediate, advanced
-    title: str                          # Course title
-    description: str                    # Course description
-    modules: List[ModuleStructure]      # Course modules
-    welcome_content: str = ""           # Welcome content
-    conclusion_content: str = ""        # Conclusion content
-
-
 class CourseContentProcessor:
-    """Process course content from local directory"""
-    
-    def __init__(self, course_directory: str = "../course_output"):
+    """Process course content from a local directory."""
+
+    def __init__(self, course_directory: str = "course_output"):
         self.course_directory = Path(course_directory)
-        self.courses: Dict[str, CourseStructure] = {}
-    
-    def scan_courses(self):
-        """Scan and process all courses in the directory"""
-        self.courses.clear()
-        
-        if not self.course_directory.exists():
-            logger.warning(f"Course directory does not exist: {self.course_directory}")
-            return
-        
-        # Process each course level directory (beginner, intermediate, advanced, etc.)
-        for level_dir in self.course_directory.iterdir():
-            if level_dir.is_dir() and level_dir.name in ['beginner', 'intermediate', 'advanced']:
-                level = level_dir.name
-                course = self._process_course_level(level_dir, level)
-                if course:
-                    self.courses[level] = course
-        
-        logger.info(f"Loaded {len(self.courses)} courses")
-    
-    def _process_course_level(self, level_dir: Path, level: str) -> Optional[CourseStructure]:
-        """Process individual course level"""
-        try:
-            # Read course metadata
-            course_info_file = level_dir / "course_info.json"
-            if not course_info_file.exists():
-                logger.warning(f"No course_info.json found in {level_dir}")
-                return None
-                
-            with open(course_info_file, 'r', encoding='utf-8') as f:
-                course_info = json.load(f)
-            
-            # Read welcome and conclusion
-            welcome_content = ""
-            conclusion_content = ""
-            
-            welcome_file = level_dir / "00_welcome.md"
-            if welcome_file.exists():
-                welcome_content = welcome_file.read_text(encoding='utf-8')
-            
-            conclusion_file = level_dir / "99_conclusion.md"
-            if conclusion_file.exists():
-                conclusion_content = conclusion_file.read_text(encoding='utf-8')
-            
-            # Process modules
-            modules = []
-            module_infos = course_info.get('modules', [])
-            
-            for i, module_info in enumerate(module_infos):
-                module_id = module_info.get('module_id', f'module_{i+1:02d}')
-                module_dir = level_dir / module_id
-                
-                if module_dir.exists():
-                    module = self._process_module(module_dir, module_id, i)
-                    if module:
-                        modules.append(module)
-            
-            # Create course structure
-            course = CourseStructure(
-                level=level,
-                title=course_info.get('title', f'Course: {level.title()}'),
-                description=course_info.get('description', ''),
-                modules=modules,
-                welcome_content=welcome_content,
-                conclusion_content=conclusion_content
-            )
-            
-            return course
-            
-        except Exception as e:
-            logger.error(f"Failed to process course level {level_dir}: {e}")
+        self.courses: Dict[str, CourseState] = {}  # Caches scanned course structures
+
+    def scan_course_content(self, level: str) -> Optional[CourseState]:
+        """
+        Scans the course directory for a specific level to build a fresh CourseState.
+        This represents the latest version of the course content on disk.
+        """
+        level_dir = self.course_directory / level
+        if not level_dir.is_dir():
+            logger.warning(f"Course level directory not found: {level_dir}")
             return None
-    
-    def _process_module(self, module_dir: Path, module_id: str, order: int) -> Optional[ModuleStructure]:
-        """Process individual module"""
-        try:
-            steps = {}
-            step_files = {
-                'intro': '01_intro.md',
-                'main': '02_main.md',
-                'conclusion': '03_conclusion.md',
-                'assessments': '04_assessments.md',
-                'summary': '05_summary.md'
-            }
-            
-            module_title = module_id.replace('_', ' ').title()
-            
-            for step_type, filename in step_files.items():
-                file_path = module_dir / filename
-                if file_path.exists():
-                    try:
-                        content = file_path.read_text(encoding='utf-8')
-                        title = self._extract_title_from_content(content) or step_type.title()
-                        
-                        # Use main content title for module title
-                        if step_type == 'main' and title != 'Main':
-                            module_title = title
-                        
-                        step = StepContent(
-                            step_type=step_type,
-                            title=title,
-                            content=content,
-                            file_path=str(file_path.relative_to(self.course_directory))
-                        )
-                        steps[step_type] = step
-                        
-                    except Exception as e:
-                        logger.warning(f"Failed to process {filename}: {e}")
-            
-            if not steps:
-                return None
-            
-            return ModuleStructure(
-                module_id=module_id,
-                title=module_title,
-                steps=steps,
-                order=order
+
+        modules = []
+        module_dirs = sorted(
+            [d for d in level_dir.iterdir() if d.is_dir() and not d.name.startswith(".")],
+            key=lambda d: d.name,
+        )
+
+        for module_dir in module_dirs:
+            module_name = re.sub(r"^\d+-", "", module_dir.name)
+            step_files = sorted(
+                [f for f in module_dir.glob("*.md") if not f.name.startswith(".")],
+                key=lambda f: f.name,
             )
-            
-        except Exception as e:
-            logger.error(f"Failed to process module {module_dir}: {e}")
+
+            steps = []
+            for step_file in step_files:
+                step_name = re.sub(r"^\d+-", "", step_file.stem)
+                steps.append(StepState(name=step_name, status=0))
+
+            if steps:
+                modules.append(ModuleState(name=module_name, status=0, steps=steps))
+
+        if not modules:
+            logger.warning(f"No modules found for level '{level}'.")
             return None
-    
-    def _extract_title_from_content(self, content: str) -> Optional[str]:
-        """Extract title from first heading in markdown"""
-        for line in content.split('\n'):
-            line = line.strip()
-            if line.startswith('# '):
-                return line[2:].strip()
+
+        return CourseState(current_module=modules[0].name, modules=modules)
+
+    def merge_course_states(self, current_state: CourseState, new_state: CourseState) -> CourseState:
+        """
+        Merges a user's saved progress with the latest course content.
+        Preserves progress for existing content and adds new modules/steps.
+        """
+        existing_module_map = {module.name: module for module in current_state.modules}
+        merged_modules = []
+
+        for new_module in new_state.modules:
+            existing_module = existing_module_map.get(new_module.name)
+            if not existing_module:
+                merged_modules.append(new_module)
+                continue
+
+            existing_step_map = {step.name: step for step in existing_module.steps}
+            merged_steps = []
+            for new_step in new_module.steps:
+                existing_step = existing_step_map.get(new_step.name)
+                if existing_step:
+                    merged_steps.append(existing_step)  # Preserve status
+                else:
+                    merged_steps.append(new_step)
+
+            # Recalculate module status
+            if all(step.status == 2 for step in merged_steps):
+                module_status = 2
+            elif any(step.status > 0 for step in merged_steps):
+                module_status = 1
+            else:
+                module_status = 0
+
+            merged_modules.append(
+                ModuleState(name=new_module.name, status=module_status, steps=merged_steps)
+            )
+
+        # Ensure the current module still exists
+        current_module_name = current_state.current_module
+        if not any(module.name == current_module_name for module in merged_modules):
+            current_module_name = merged_modules[0].name if merged_modules else ""
+
+        return CourseState(current_module=current_module_name, modules=merged_modules)
+
+    def read_course_step(self, level: str, module_name: str, step_name: str) -> Optional[str]:
+        """
+        Reads the content of a specific course step file.
+        """
+        level_dir = self.course_directory / level
+        module_dir_name = self._find_item_by_name(level_dir, module_name, is_dir=True)
+        if not module_dir_name:
+            logger.error(f"Module '{module_name}' not found in '{level}'.")
+            return None
+
+        module_path = level_dir / module_dir_name
+        step_file_name = self._find_item_by_name(module_path, step_name, extension=".md")
+        if not step_file_name:
+            logger.error(f"Step '{step_name}' not found in '{module_name}'.")
+            return None
+
+        try:
+            with open(module_path / step_file_name, "r", encoding="utf-8") as f:
+                return f.read()
+        except IOError as e:
+            logger.error(f"Failed to read step '{step_file_name}': {e}")
+            return None
+
+    def _find_item_by_name(self, base_path: Path, name: str, is_dir: bool = False, extension: str = "") -> Optional[str]:
+        """Finds a directory or file that matches a name after stripping its prefix."""
+        if not base_path.exists():
+            return None
+
+        for item in base_path.iterdir():
+            if is_dir and not item.is_dir():
+                continue
+            if not is_dir and item.is_dir():
+                continue
+
+            item_name_no_prefix = re.sub(r"^\d+-", "", item.stem if not is_dir else item.name)
+            if item_name_no_prefix == name:
+                return item.name
         return None
-    
-    def get_course(self, level: str) -> Optional[CourseStructure]:
-        """Get course by level"""
-        return self.courses.get(level)
-    
-    def list_courses(self) -> Dict[str, str]:
-        """List all available courses"""
-        return {level: course.title for level, course in self.courses.items()}
-    
-    def get_all_courses(self) -> List[CourseStructure]:
-        """Get all courses"""
-        return list(self.courses.values())
-
-
-# Example usage
-def main():
-    """Example usage"""
-    processor = CourseContentProcessor("course_output")
-    processor.scan_courses()
-    
-    print(f"Available courses: {processor.list_courses()}")
-    
-    # Get beginner course
-    beginner = processor.get_course("beginner")
-    if beginner:
-        print(f"Beginner course: {beginner.title}")
-        print(f"Modules: {len(beginner.modules)}")
-        for module in beginner.modules:
-            print(f"  - Module {module.module_id}: {module.title} ({len(module.steps)} steps)")
-    else:
-        print("No beginner course found")
-
-
-if __name__ == "__main__":
-    main() 

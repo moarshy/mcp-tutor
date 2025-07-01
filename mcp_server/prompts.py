@@ -10,6 +10,44 @@ from mcp.types import Prompt, PromptArgument, PromptMessage, Role, TextContent
 
 logger = logging.getLogger(__name__)
 
+# The introduction prompt is shown only when a user registers for the course.
+INTRODUCTION_PROMPT = """
+# Welcome to the Interactive Tutor!
+
+This interactive guide will help you learn complex topics through a structured, step-by-step course.
+
+## How This Course Works
+
+- Each module is broken into multiple steps.
+- I'll guide you through the content and examples.
+- You can ask questions at any time.
+- If you ever leave and come back, use the `start_course` tool to pick up where you left off.
+- Use the `next_course_step` tool to move to the next step when you're ready.
+- Use the `get_course_status` tool to check your progress.
+- Use the `clear_course_history` tool to reset your progress and start over.
+
+Let's get started with your first module!
+"""
+
+# This prompt wraps each module step, providing context and instructions to the AI model.
+MODULE_PROMPT_TEMPLATE = """
+You are an expert tutor. Please help the user through the steps of the course by walking them through the content.
+The goal is to show them how the material works and explain it as they go.
+Each module is broken up into steps. You should return the content of the step and ask the user to move to the next step when they are ready.
+Please ensure to return any text in markdown blockquotes exactly as written in your response.
+
+Here is the content for this step:
+<StepContent>
+{content}
+</StepContent>
+
+When you're ready to continue, use the `next_course_step` tool to move to the next step.
+"""
+
+def get_module_prompt(content: str) -> str:
+    """Wraps the step content in the module prompt template."""
+    return MODULE_PROMPT_TEMPLATE.format(content=content)
+
 
 def get_prompt_definitions() -> List[Prompt]:
     """Get all available prompt definitions"""

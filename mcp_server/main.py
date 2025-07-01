@@ -12,6 +12,11 @@ from mcp.server import Server
 from mcp.types import Tool, TextContent, Prompt, PromptMessage
 import mcp.server.stdio
 
+from .course_management import CourseContentProcessor
+from .course_tools import CourseTools
+from .logging_config import setup_logging
+from .tools import get_tool_definitions, handle_tool_call
+
 # Optional SSE support
 try:
     import mcp.server.sse
@@ -19,19 +24,17 @@ try:
 except ImportError:
     SSE_AVAILABLE = False
 
-from .course_management import CourseContentProcessor
-from .tools import get_tool_definitions, handle_tool_call
-from .prompts import get_prompt_definitions, handle_prompt_request
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+setup_logging()
 logger = logging.getLogger(__name__)
 
 # Initialize MCP server
 server = Server("educational-tutor")
 
-# Global course processor
-course_processor = None
+# Global course processor and tools
+course_processor: CourseContentProcessor
+course_tools: CourseTools
 
 
 @server.list_tools()
@@ -43,7 +46,8 @@ async def handle_list_tools() -> List[Tool]:
 @server.call_tool()
 async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
     """Handle tool calls"""
-    return await handle_tool_call(name, arguments, course_processor)
+    global course_processor, course_tools
+    return await handle_tool_call(name, arguments, course_processor, course_tools)
 
 
 # @server.list_prompts()
@@ -60,18 +64,18 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[TextCon
 
 async def main():
     """Initialize and run the MCP server"""
-    global course_processor
+    global course_processor, course_tools
     
-    # Initialize course processor
+    # Initialize course processor and tools
     try:
-        COURSE_DIR = os.getenv("COURSE_DIR", "./course_output")
+        COURSE_DIR = os.getenv("COURSE_DIR", "course_output")
         course_processor = CourseContentProcessor(COURSE_DIR)
-        course_processor.scan_courses()
-        courses = course_processor.list_courses()
-        logger.info(f"Loaded {len(courses)} courses")
+        course_tools = CourseTools(course_processor)
+        logger.info(f"Course processor initialized with directory: {COURSE_DIR}")
     except Exception as e:
-        logger.error(f"Failed to initialize course processor: {e}")
-        course_processor = None
+        logger.error(f"Failed to initialize course processor: {e}", exc_info=True)
+        # Exit or handle gracefully if the course processor is essential
+        return
     
     # Check if SSE is requested
     use_sse = os.getenv("MCP_USE_SSE", "false").lower() == "true"
