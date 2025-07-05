@@ -31,17 +31,15 @@ Let's get started with your first module!
 
 # This prompt wraps each module step, providing context and instructions to the AI model.
 MODULE_PROMPT_TEMPLATE = """
-You are an expert tutor. Please help the user through the steps of the course by walking them through the content.
-The goal is to show them how the material works and explain it as they go.
-Each module is broken up into steps. You should return the content of the step and ask the user to move to the next step when they are ready.
-Please ensure to return any text in markdown blockquotes exactly as written in your response.
+You are an expert tutor helping the user through a structured course. Present the course content clearly using proper markdown formatting.
 
-Here is the content for this step:
-<StepContent>
+Please present the following course content exactly as it appears, preserving all markdown formatting (headers, lists, code blocks, etc.). After presenting the content, provide brief guidance and ask if they're ready to continue to the next step.
+
 {content}
-</StepContent>
 
-When you're ready to continue, use the `next_course_step` tool to move to the next step.
+---
+
+This completes the current step. When you're ready to continue to the next step, let me know and I'll advance you forward in the course!
 """
 
 def get_module_prompt(content: str) -> str:
